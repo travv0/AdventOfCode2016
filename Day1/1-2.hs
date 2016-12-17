@@ -33,6 +33,6 @@ distanceBetweenCoords (x1,y1) (x2,y2) = abs (x2 - x1) + abs (y2 - y1)
 
 main :: IO ()
 main = do
-  strDir <- fmap (splitOn ", ") $ readFile "1-2_input.txt"
+  strDir <- fmap (splitOn ", ") $ readFile "input.txt"
   let path = map (\(t:d) -> (read [t] :: Turn, read d :: Distance)) strDir
   putStrLn $ show $ distanceBetweenCoords (0,0) $ moveOnPath (0,0) path North []
