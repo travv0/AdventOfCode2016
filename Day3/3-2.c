@@ -1,22 +1,24 @@
 #include "stdio.h"
 
+#define SIDES 3
+
 int isTriangle(int, int, int);
 
 int main(void) {
 	FILE *f = fopen("input.txt", "r");
-	int x1, x2, x3,	y1, y2, y3, z1, z2, z3,	i = 0;
+	int x[SIDES], y[SIDES], z[SIDES];
+	int counter = 0, i = 0;
 
 	while (fscanf(f, "%d %d %d %d %d %d %d %d %d",
-		      &x1, &x2, &x3, &y1, &y2, &y3, &z1, &z2, &z3) != -1) {
-		if (isTriangle(x1, y1, z1))
-			i++;
-		if (isTriangle(x2, y2, z2))
-			i++;
-		if (isTriangle(x3, y3, z3))
-			i++;
+		      &x[0], &x[1], &x[2],
+		      &y[0], &y[1], &y[2],
+		      &z[0], &z[1], &z[2]) != -1) {
+		for (i = 0; i < SIDES; i++)
+			if (isTriangle(x[i], y[i], z[i]))
+				counter++;
 	}
 
-	printf("%d\n", i);
+	printf("%d\n", counter);
 	return 0;
 }
 
