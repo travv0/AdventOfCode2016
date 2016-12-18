@@ -1,5 +1,4 @@
 import re
-import functools
 
 def supports_TLS(ip):
     for hypernet_seq in re.finditer("\[(.*?)\]", ip):
