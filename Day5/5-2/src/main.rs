@@ -32,24 +32,31 @@ fn main() {
     let mut cnt = 0;
     let mut pass_holder: [char; 8] = [' '; 8];
     let mut password = "".to_string();
+
     loop {
         let hash = hash_str(puzzle_input.to_string() + &i.to_string());
+
         if starts_with_zeros(&hash, 5) {
-            let c = char_at(&hash, 5).unwrap_or_default();
-            let d = c.to_digit(16).unwrap_or_default();
-            if d < 8 && pass_holder[d as usize] == ' ' {
-                let c = char_at(&hash, 6).unwrap_or_default();
-                pass_holder[d as usize] = c;
+            let d = char_at(&hash, 5)
+                .unwrap_or_default()
+                .to_digit(16)
+                .unwrap_or_default() as usize;
+
+            if d < 8 && pass_holder[d] == ' ' {
+                pass_holder[d] = char_at(&hash, 6).unwrap_or_default();
                 cnt += 1;
             }
         }
+
         if cnt >= 8 {
             for c in &pass_holder {
                 password.push(*c);
             }
             println!("{}", password);
+
             break;
         }
+
         i += 1;
     }
 }
