@@ -3,6 +3,10 @@ extern crate crypto;
 use crypto::md5::Md5;
 use crypto::digest::Digest;
 
+const LEADING_ZEROS: usize = 5;
+const PASS_CHAR_POS: usize = LEADING_ZEROS;
+const PASS_LEN: usize = 8;
+
 fn hash_str(s: String) -> String {
     let mut sh = Md5::new();
     sh.input_str(&s);
@@ -33,8 +37,8 @@ fn main() {
     let mut password = "".to_string();
     loop {
         let hash = hash_str(puzzle_input.to_string() + &i.to_string());
-        if starts_with_zeros(&hash, 5) {
-            match char_at(hash, 5) {
+        if starts_with_zeros(&hash, LEADING_ZEROS) {
+            match char_at(hash, PASS_CHAR_POS) {
                 Some(c) => {
                     password.push(c);
                     cnt += 1;
@@ -42,7 +46,7 @@ fn main() {
                 None => (),
             };
         }
-        if cnt >= 8 {
+        if cnt >= PASS_LEN {
             println!("{}", password);
             break;
         }
