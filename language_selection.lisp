@@ -1,4 +1,4 @@
-0(defparameter *languages* '("C"
+(defparameter *languages* '("C"
                             "Java"
                             "Python"
                             "C++"
