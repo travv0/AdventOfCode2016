@@ -55,12 +55,18 @@
 (defun parse-room-name (s)
   (subseq s 0 (1- (position-if 'digit-char-p s))))
 
-(defun print-decrypted-names-with-sector-ids (filename)
+(defun list-decrypted-names-with-sector-ids (filename)
   (with-open-file (file filename)
     (loop for room = (read-line file nil)
-          while room do
+          while room collect
             (let ((decrypted-room (decrypt-room (parse-room-name room)
                                                  (parse-sector-id room))))
-              (format t "~d: ~a~%"
-                      (parse-sector-id room)
-                      decrypted-room)))))
+              (cons (parse-sector-id room) decrypted-room)))))
+
+(defun print-answers (filename)
+  (format t "The first answer is: ~a~%" (sum-of-real-rooms filename))
+  (format t "The second answer is: ~a~%"
+          (first (find-if
+                  (lambda (x) (search "north" x))
+                  (list-decrypted-names-with-sector-ids filename)
+                  :key #'cdr))))
