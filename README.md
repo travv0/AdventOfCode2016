@@ -15,7 +15,7 @@ Here are the languages by day:
 - [X] Day  9 - Shell  
 - [X] Day 10 - Lua  
 - [ ] Day 11 - Erlang  
-- [ ] Day 12 - Java  
+- [X] Day 12 - Java  
 - [ ] Day 13 - Prolog  
 - [ ] Day 14 - Go  
 - [ ] Day 15 - OCaml  
