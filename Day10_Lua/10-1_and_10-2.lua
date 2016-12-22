@@ -1,3 +1,8 @@
+seeking_chip1 = 61
+seeking_chip2 = 17
+
+answer = 0
+
 function file_exists(file)
   local f = io.open(file, "rb")
   if f then f:close() end
@@ -40,6 +45,10 @@ function Bot:give(low_bot, low_to_bot, high_bot, high_to_bot)
   end
   if not bots[high_bot] then
     bots[high_bot] = Bot:new(high_bot)
+  end
+
+  if completion_check(self.microchips[1], self.microchips[2]) then
+    answer = self.number
   end
 
   local temp1 = self.microchips[1]
@@ -168,8 +177,9 @@ file = 'input.txt'
 lines = lines_from(file)
 
 populate_instructions_table(lines)
-while not (output[0] or output[1] or output[2]) do
+while answer == 0 and not (output[0] or output[1] or output[2]) do
   give_bots_microchips(lines)
 end
 
-print(output[0] * output[1] * output[2] .. " is the answer.")
+print(answer .. " is the first answer.")
+print(output[0] * output[1] * output[2] .. " is the second answer.")
