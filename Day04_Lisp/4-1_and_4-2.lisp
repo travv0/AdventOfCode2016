@@ -60,7 +60,7 @@
     (loop for room = (read-line file nil)
           while room collect
             (let ((decrypted-room (decrypt-room (parse-room-name room)
-                                                 (parse-sector-id room))))
+                                                (parse-sector-id room))))
               (cons (parse-sector-id room) decrypted-room)))))
 
 (defun print-answers (filename)
