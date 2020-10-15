@@ -53,9 +53,7 @@ pub fn main() anyerror!void {
     const final_pos = path[path.len - 1];
     print("Part 1: {}\n", .{try manhattanDistance(.{ .x = 0, .y = 0 }, final_pos)});
 
-    const seen_twice_pos = (try findFirstPosVisitedTwice(allocator, path)) orelse {
-        return error.NoCoordsSeenTwice;
-    };
+    const seen_twice_pos = try findFirstPosVisitedTwice(allocator, path);
     print("Part 2: {}\n", .{try manhattanDistance(.{ .x = 0, .y = 0 }, seen_twice_pos)});
 }
 
@@ -67,8 +65,7 @@ fn parseInput(allocator: *Allocator, input: []const u8) ![]Turn {
     while (parts.next()) |part| {
         const dir: TurnDir = if (part[0] == 'R') .R else .L;
         const dist = std.fmt.parseUnsigned(u8, part[1..], 10) catch |err| {
-            print("couldn't parse '{}' as number: {}", .{ part[1..], err });
-            std.os.exit(@intCast(u8, @errorToInt(err)));
+            util.exitWithError(err, "couldn't parse '{}' as number", .{part[1..]});
         };
         try turns.append(.{ .direction = dir, .distance = dist });
     }
@@ -143,7 +140,7 @@ test "manhattanDistance" {
     assert(13 == try manhattanDistance(.{ .x = 9, .y = 9 }, .{ .x = 10, .y = 21 }));
 }
 
-fn findFirstPosVisitedTwice(allocator: *Allocator, path: []const Coords) !?Coords {
+fn findFirstPosVisitedTwice(allocator: *Allocator, path: []const Coords) !Coords {
     var positions = ArrayList(Coords).init(allocator);
     defer positions.deinit();
 
@@ -155,7 +152,7 @@ fn findFirstPosVisitedTwice(allocator: *Allocator, path: []const Coords) !?Coord
         }
         try positions.append(pos);
     }
-    return null;
+    return error.NoCoordsSeenTwice;
 }
 
 test "findFirstPosVisitedTwice" {
