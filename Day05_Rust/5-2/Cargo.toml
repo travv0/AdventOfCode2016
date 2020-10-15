@@ -1,7 +1,0 @@
-[package]
-name = "5-2"
-version = "0.1.0"
-authors = ["Travis <tssund93@gmail.com>"]
-
-[dependencies]
-rust-crypto = "0.2.36"
