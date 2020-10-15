@@ -1,4 +1,5 @@
 const std = @import("std");
+const util = @import("util.zig");
 const fs = std.fs;
 const mem = std.mem;
 const File = fs.File;
@@ -44,7 +45,7 @@ const Coords = struct {
 
 pub fn main() anyerror!void {
     const allocator = std.heap.page_allocator;
-    const buf = try readFileIntoString(allocator, "input.txt", 1024);
+    const buf = try util.readFileIntoString(allocator, "input.txt", 1024);
     defer allocator.free(buf);
     const path = try makePath(allocator, buf);
     defer allocator.free(path);
@@ -56,13 +57,6 @@ pub fn main() anyerror!void {
         return error.NoCoordsSeenTwice;
     };
     print("Part 2: {}\n", .{try manhattanDistance(.{ .x = 0, .y = 0 }, seen_twice_pos)});
-}
-
-fn readFileIntoString(allocator: *Allocator, path: []const u8, max_bytes: usize) ![]u8 {
-    const file = try fs.cwd().openFile("input.txt", .{ .read = true });
-    defer file.close();
-
-    return try file.readToEndAlloc(allocator, max_bytes);
 }
 
 fn parseInput(allocator: *Allocator, input: []const u8) ![]Turn {
