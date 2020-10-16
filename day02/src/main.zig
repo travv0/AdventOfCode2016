@@ -11,31 +11,29 @@ const Direction = enum { U, R, D, L };
 pub fn main() anyerror!void {
     const allocator = std.heap.page_allocator;
     const input = try util.readFileIntoString(allocator, "input.txt", 1024 * 10);
-    const code = try findCode(allocator, input);
-    defer allocator.free(code);
-    print("Part 1: {}\n", .{code});
+    const codePart1 = try findCode(allocator, input, moveDirectionPart1);
+    defer allocator.free(codePart1);
+    print("Part 1: {}\n", .{codePart1});
+
+    const codePart2 = try findCode(allocator, input, moveDirectionPart2);
+    defer allocator.free(codePart2);
+    print("Part 2: {}\n", .{codePart2});
 }
 
-fn findCode(allocator: *Allocator, input: []const u8) ![]u8 {
+fn findCode(allocator: *Allocator, input: []const u8, moveFn: fn (u8, Direction) u8) ![]u8 {
     const allDirs = try parseInput(allocator, input);
     defer allocator.free(allDirs);
     defer for (allDirs) |dir| allocator.free(dir);
 
     var result = try allocator.alloc(u8, allDirs.len);
-    var num: u4 = 5;
+    var num: u8 = '5';
     for (allDirs) |dirs, i| {
         for (dirs) |dir| {
-            num = moveDirection(num, dir);
+            num = moveFn(num, dir);
         }
-        result[i] = std.fmt.digitToChar(num, false);
+        result[i] = num;
     }
     return result;
-}
-
-test "findCode" {
-    var code = try findCode(std.testing.allocator, "ULL\nRRDDD\nLURDL\nUUUUD\n");
-    defer std.testing.allocator.free(code);
-    assert(mem.eql(u8, "1985", code));
 }
 
 fn parseInput(allocator: *Allocator, input: []const u8) ![][]Direction {
@@ -73,21 +71,82 @@ test "parseInput" {
     assert(mem.eql(Direction, &[_]Direction{ .U, .U, .U, .U, .D }, dirs[3]));
 }
 
-fn moveDirection(num: u4, dir: Direction) u4 {
-    return switch (dir) {
+fn moveDirectionPart1(button: u8, dir: Direction) u8 {
+    const num = std.fmt.charToDigit(button, 10) catch 5;
+    const newNum = switch (dir) {
         .U => if (num > 3) num - 3 else num,
         .R => if (num % 3 != 0) num + 1 else num,
         .D => if (num < 7) num + 3 else num,
         .L => if ((num - 1) % 3 != 0) num - 1 else num,
     };
+    return std.fmt.digitToChar(newNum, false);
 }
 
-test "moveDirection" {
-    assert(1 == moveDirection(1, .L));
-    assert(3 == moveDirection(3, .U));
-    assert(3 == moveDirection(6, .U));
-    assert(9 == moveDirection(9, .R));
-    assert(7 == moveDirection(7, .L));
-    assert(5 == moveDirection(4, .R));
-    assert(7 == moveDirection(4, .D));
+fn moveDirectionPart2(button: u8, dir: Direction) u8 {
+    return switch (dir) {
+        .U => switch (button) {
+            '3' => '1',
+            '6' => '2',
+            '7' => '3',
+            '8' => '4',
+            'A' => '6',
+            'B' => '7',
+            'C' => '8',
+            'D' => 'B',
+            else => button,
+        },
+        .R => switch (button) {
+            '2' => '3',
+            '3' => '4',
+            '5' => '6',
+            '6' => '7',
+            '7' => '8',
+            '8' => '9',
+            'A' => 'B',
+            'B' => 'C',
+            else => button,
+        },
+        .D => switch (button) {
+            '1' => '3',
+            '2' => '6',
+            '3' => '7',
+            '4' => '8',
+            '6' => 'A',
+            '7' => 'B',
+            '8' => 'C',
+            'B' => 'D',
+            else => button,
+        },
+        .L => switch (button) {
+            '3' => '2',
+            '4' => '3',
+            '6' => '5',
+            '7' => '6',
+            '8' => '7',
+            '9' => '8',
+            'B' => 'A',
+            'C' => 'B',
+            else => button,
+        },
+    };
+}
+
+test "moveDirectionPart1" {
+    assert('1' == moveDirectionPart1('1', .L));
+    assert('3' == moveDirectionPart1('3', .U));
+    assert('3' == moveDirectionPart1('6', .U));
+    assert('9' == moveDirectionPart1('9', .R));
+    assert('7' == moveDirectionPart1('7', .L));
+    assert('5' == moveDirectionPart1('4', .R));
+    assert('7' == moveDirectionPart1('4', .D));
+}
+
+test "findCode" {
+    var codePart1 = try findCode(std.testing.allocator, "ULL\nRRDDD\nLURDL\nUUUUD\n", moveDirectionPart1);
+    defer std.testing.allocator.free(codePart1);
+    assert(mem.eql(u8, "1985", codePart1));
+
+    var codePart2 = try findCode(std.testing.allocator, "ULL\nRRDDD\nLURDL\nUUUUD\n", moveDirectionPart2);
+    defer std.testing.allocator.free(codePart2);
+    assert(mem.eql(u8, "5DB3", codePart2));
 }
