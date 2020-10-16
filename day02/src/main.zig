@@ -57,7 +57,7 @@ fn parseInput(allocator: *Allocator, input: []const u8) ![][]Direction {
         }
         try result.append(dirs);
     }
-    return result.items;
+    return result.toOwnedSlice();
 }
 
 test "parseInput" {

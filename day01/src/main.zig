@@ -71,7 +71,7 @@ fn parseInput(allocator: *Allocator, input: []const u8) ![]Turn {
         try turns.append(.{ .direction = dir, .distance = dist });
     }
 
-    return turns.items;
+    return turns.toOwnedSlice();
 }
 
 test "parseInput" {
@@ -109,7 +109,7 @@ fn makePath(allocator: *Allocator, input: []const u8) ![]Coords {
         }
     }
 
-    return path.items;
+    return path.toOwnedSlice();
 }
 
 test "makePath" {
