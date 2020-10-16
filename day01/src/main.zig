@@ -25,9 +25,10 @@ const Direction = enum {
 
     fn turn(self: Direction, dir: TurnDir) Direction {
         const len = @typeInfo(Direction).Enum.fields.len;
+        const dirInt = @intCast(u4, @enumToInt(self));
         return @intToEnum(Direction, @intCast(u2, switch (dir) {
-            .R => (@intCast(u4, @enumToInt(self)) + 1) % len,
-            .L => (@intCast(u4, @enumToInt(self)) + len - 1) % len,
+            .R => (dirInt + 1) % len,
+            .L => (dirInt + len - 1) % len,
         }));
     }
 
