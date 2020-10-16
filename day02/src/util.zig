@@ -10,6 +10,9 @@ pub fn readFileIntoString(allocator: *Allocator, path: []const u8, max_bytes: us
 }
 
 pub fn exitWithError(err: anyerror, comptime format: []const u8, args: anytype) noreturn {
-    std.log.emerg("{}: " ++ format, .{err} ++ args);
+    if (@typeInfo(@TypeOf(args)) != .Struct) {
+        @compileError("Expected tuple or struct argument, found " ++ @typeName(@TypeOf(args)));
+    }
+    std.log.err("{}: " ++ format, .{err} ++ args);
     std.os.exit(@intCast(u8, @errorToInt(err)));
 }
