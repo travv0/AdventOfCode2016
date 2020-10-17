@@ -44,11 +44,10 @@ fn partTwo(input: []u8) !u16 {
         var x: [sides][]const u8 = undefined;
         var y: [sides][]const u8 = undefined;
         var z: [sides][]const u8 = undefined;
-        var i: u2 = 0;
         try populateSides(&x, &lines);
         try populateSides(&y, &lines);
         try populateSides(&z, &lines);
-        i = 0;
+        var i: u2 = 0;
         while (i < sides) : (i += 1) {
             const triangle = .{
                 .x = parseSide(x[i]),
