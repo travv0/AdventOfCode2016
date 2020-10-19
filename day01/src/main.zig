@@ -25,10 +25,10 @@ const Direction = enum {
 
     fn turn(self: Direction, dir: TurnDir) Direction {
         const len = @typeInfo(Direction).Enum.fields.len;
-        const dirInt = @intCast(u4, @enumToInt(self));
+        const dir_int = @intCast(u4, @enumToInt(self));
         return @intToEnum(Direction, @intCast(u2, switch (dir) {
-            .R => (dirInt + 1) % len,
-            .L => (dirInt + len - 1) % len,
+            .R => (dir_int + 1) % len,
+            .L => (dir_int + len - 1) % len,
         }));
     }
 
@@ -159,6 +159,6 @@ fn findFirstPosVisitedTwice(allocator: *Allocator, path: []const Coords) !Coords
 test "findFirstPosVisitedTwice" {
     const path = try makePath(std.testing.allocator, "R8, R4, R4, R8");
     defer std.testing.allocator.free(path);
-    const pos = (try findFirstPosVisitedTwice(std.testing.allocator, path)).?;
+    const pos = try findFirstPosVisitedTwice(std.testing.allocator, path);
     assert(pos.x == 4 and pos.y == 0);
 }

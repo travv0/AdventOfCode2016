@@ -9,11 +9,11 @@ pub fn main() !void {
     const input = try util.readFileIntoString(allocator, "input.txt", 1024 * 100);
     defer allocator.free(input);
 
-    const partOneResult = partOne(input);
-    std.debug.print("Part 1: {}\n", .{partOneResult});
+    const part_one_result = partOne(input);
+    std.debug.print("Part 1: {}\n", .{part_one_result});
 
-    const partTwoResult = try partTwo(input);
-    std.debug.print("Part 2: {}\n", .{partTwoResult});
+    const part_two_result = try partTwo(input);
+    std.debug.print("Part 2: {}\n", .{part_two_result});
 }
 
 fn partOne(input: []u8) u16 {

@@ -11,23 +11,23 @@ const Direction = enum { U, R, D, L };
 pub fn main() anyerror!void {
     const allocator = std.heap.page_allocator;
     const input = try util.readFileIntoString(allocator, "input.txt", 1024 * 10);
-    const codePart1 = try findCode(allocator, input, moveDirectionPart1);
-    defer allocator.free(codePart1);
-    print("Part 1: {}\n", .{codePart1});
+    const code_part1 = try findCode(allocator, input, moveDirectionPart1);
+    defer allocator.free(code_part1);
+    print("Part 1: {}\n", .{code_part1});
 
-    const codePart2 = try findCode(allocator, input, moveDirectionPart2);
-    defer allocator.free(codePart2);
-    print("Part 2: {}\n", .{codePart2});
+    const code_part2 = try findCode(allocator, input, moveDirectionPart2);
+    defer allocator.free(code_part2);
+    print("Part 2: {}\n", .{code_part2});
 }
 
 fn findCode(allocator: *Allocator, input: []const u8, moveFn: fn (u8, Direction) u8) ![]u8 {
-    const allDirs = try parseInput(allocator, input);
-    defer allocator.free(allDirs);
-    defer for (allDirs) |dir| allocator.free(dir);
+    const all_dirs = try parseInput(allocator, input);
+    defer allocator.free(all_dirs);
+    defer for (all_dirs) |dir| allocator.free(dir);
 
-    var result = try allocator.alloc(u8, allDirs.len);
+    var result = try allocator.alloc(u8, all_dirs.len);
     var num: u8 = '5';
-    for (allDirs) |dirs, i| {
+    for (all_dirs) |dirs, i| {
         for (dirs) |dir| {
             num = moveFn(num, dir);
         }
@@ -73,13 +73,13 @@ test "parseInput" {
 
 fn moveDirectionPart1(button: u8, dir: Direction) u8 {
     const num = std.fmt.charToDigit(button, 10) catch 5;
-    const newNum = switch (dir) {
+    const new_num = switch (dir) {
         .U => if (num > 3) num - 3 else num,
         .R => if (num % 3 != 0) num + 1 else num,
         .D => if (num < 7) num + 3 else num,
         .L => if ((num - 1) % 3 != 0) num - 1 else num,
     };
-    return std.fmt.digitToChar(newNum, false);
+    return std.fmt.digitToChar(new_num, false);
 }
 
 fn moveDirectionPart2(button: u8, dir: Direction) u8 {
@@ -142,11 +142,11 @@ test "moveDirectionPart1" {
 }
 
 test "findCode" {
-    var codePart1 = try findCode(std.testing.allocator, "ULL\nRRDDD\nLURDL\nUUUUD\n", moveDirectionPart1);
-    defer std.testing.allocator.free(codePart1);
-    assert(mem.eql(u8, "1985", codePart1));
+    var code_part1 = try findCode(std.testing.allocator, "ULL\nRRDDD\nLURDL\nUUUUD\n", moveDirectionPart1);
+    defer std.testing.allocator.free(code_part1);
+    assert(mem.eql(u8, "1985", code_part1));
 
-    var codePart2 = try findCode(std.testing.allocator, "ULL\nRRDDD\nLURDL\nUUUUD\n", moveDirectionPart2);
-    defer std.testing.allocator.free(codePart2);
-    assert(mem.eql(u8, "5DB3", codePart2));
+    var code_part2 = try findCode(std.testing.allocator, "ULL\nRRDDD\nLURDL\nUUUUD\n", moveDirectionPart2);
+    defer std.testing.allocator.free(code_part2);
+    assert(mem.eql(u8, "5DB3", code_part2));
 }
