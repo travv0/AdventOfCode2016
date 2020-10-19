@@ -7,7 +7,7 @@ const ArrayList = std.ArrayList;
 pub fn main() !void {
     const allocator = std.heap.page_allocator;
     const input = try util.readFileIntoString(allocator, "input.txt", 1024 * 50);
-    const realRooms = try findRealRooms(allocator, std.fmt.trim(input));
+    const realRooms = try findRealRooms(allocator, input);
     defer freeRooms(allocator, realRooms);
 
     var sectorIdSum: u32 = 0;
@@ -120,7 +120,7 @@ fn findRealRooms(allocator: *Allocator, input: []const u8) ![]Room {
 
     var rooms = ArrayList(Room).init(allocator);
     errdefer rooms.deinit();
-    var lines = std.mem.split(input, "\n");
+    var lines = std.mem.split(std.fmt.trim(input), "\n");
     while (lines.next()) |line| {
         const room = try parseLine(allocator, regexCompiled, regexExtra, line);
         errdefer room.deinit();
@@ -140,10 +140,11 @@ fn freeRooms(allocator: *Allocator, rooms: []Room) void {
 
 test "findRealRooms" {
     const input =
-        \\\aaaaa-bbb-z-y-x-123[abxyz]
-        \\\a-b-c-d-e-f-g-h-987[abcde]
-        \\\not-a-real-room-404[oarel]
-        \\\totally-real-room-200[decoy]
+        \\aaaaa-bbb-z-y-x-123[abxyz]
+        \\a-b-c-d-e-f-g-h-987[abcde]
+        \\not-a-real-room-404[oarel]
+        \\totally-real-room-200[decoy]
+        \\
     ;
     const rooms = try findRealRooms(std.testing.allocator, input);
     defer freeRooms(std.testing.allocator, rooms);
