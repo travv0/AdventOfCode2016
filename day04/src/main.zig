@@ -4,7 +4,7 @@ const c = @cImport(@cInclude("pcre.h"));
 const Allocator = std.mem.Allocator;
 const ArrayList = std.ArrayList;
 
-pub fn main() anyerror!void {
+pub fn main() !void {
     var pcreError: ?*const u8 = undefined;
     var pcreErrorOffset: c_int = undefined;
     const pcreFree = c.pcre_free orelse return error.NoPcreFree;
@@ -117,7 +117,7 @@ test "parseLine" {
     std.debug.assert(std.mem.eql(u8, room.checksum, "oarel"));
 }
 
-fn findRealRooms(allocator: *Allocator, regexCompiled: *c.pcre, regexExtra: *c.pcre_extra, input: []const u8) ![]Room {
+fn findRealRooms(allocator: *Allocator, regexCompiled: *c.pcre, regexExtra: ?*c.pcre_extra, input: []const u8) ![]Room {
     var rooms = ArrayList(Room).init(allocator);
     errdefer rooms.deinit();
     var lines = std.mem.split(input, "\n");
