@@ -79,7 +79,7 @@ pub fn parseLine(allocator: *Allocator, regex_compiled: *c.pcre, regex_extra: ?*
     var checksum: ?[*:0]const u8 = undefined;
     const exec_ret = c.pcre_exec(regex_compiled, regex_extra, line.ptr, @intCast(c_int, line.len), 0, 0, &sub_strs, sub_strs_len);
     if (exec_ret != 4) {
-        util.exitWithError(error.WrongNumberOfParsedGroups, "group count: {}, line: {}", .{ exec_ret, line });
+        return error.WrongNumberOfParsedGroups;
     }
     _ = c.pcre_get_substring(line.ptr, &sub_strs, exec_ret, 1, &name);
     _ = c.pcre_get_substring(line.ptr, &sub_strs, exec_ret, 2, &sector_id);
@@ -120,7 +120,7 @@ fn findRealRooms(allocator: *Allocator, input: []const u8) ![]Room {
     defer if (regex_extra) |re| pcre_free(re);
 
     var rooms = ArrayList(Room).init(allocator);
-    errdefer rooms.deinit();
+    errdefer freeRooms(allocator, rooms.items);
     var lines = std.mem.split(std.fmt.trim(input), "\n");
     while (lines.next()) |line| {
         var room = try parseLine(allocator, regex_compiled, regex_extra, line);
@@ -145,11 +145,11 @@ test "findRealRooms" {
         \\a-b-c-d-e-f-g-h-987[abcde]
         \\not-a-real-room-404[oarel]
         \\totally-real-room-200[decoy]
-        \\
     ;
-    const rooms = try findRealRooms(std.testing.allocator, input);
+    const rooms = try findRealRooms(std.testing.allocator, input ++ "\n");
     defer freeRooms(std.testing.allocator, rooms);
     std.testing.expectEqual(@as(usize, 3), rooms.len);
+    std.testing.expectError(error.WrongNumberOfParsedGroups, findRealRooms(std.testing.allocator, input ++ "\nasdf"));
 }
 
 fn shiftCipher(str: []const u8, buffer: []u8, shiftAmount: u16) void {
