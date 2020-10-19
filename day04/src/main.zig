@@ -63,7 +63,7 @@ const Room = struct {
     test "isReal" {
         var room = try Room.init(std.testing.allocator, "not-a-real-room", 404, "oarel");
         defer room.deinit();
-        std.debug.assert(room.isReal());
+        std.testing.expect(room.isReal());
     }
 };
 
@@ -166,7 +166,7 @@ test "shiftCipher" {
     const sector_id = 343;
     var buffer: [name.len]u8 = undefined;
     shiftCipher(name, buffer[0..], sector_id);
-    std.debug.assert(std.mem.eql(u8, "very encrypted name", buffer[0..]));
+    std.testing.expectEqualSlices(u8, "very encrypted name", buffer[0..]);
 }
 
 fn findNorthPoleRoom(rooms: []Room) !Room {

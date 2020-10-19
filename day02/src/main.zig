@@ -3,7 +3,8 @@ const util = @import("util.zig");
 const Allocator = std.mem.Allocator;
 const ArrayList = std.ArrayList;
 const print = std.debug.print;
-const assert = std.debug.assert;
+const expectEqual = std.testing.expectEqual;
+const expectEqualSlices = std.testing.expectEqualSlices;
 const mem = std.mem;
 
 const Direction = enum { U, R, D, L };
@@ -64,11 +65,11 @@ test "parseInput" {
     const dirs = try parseInput(std.testing.allocator, "ULL\nRRDDD\nLURDL\nUUUUD\n");
     defer std.testing.allocator.free(dirs);
     defer for (dirs) |dir| std.testing.allocator.free(dir);
-    assert(4 == dirs.len);
-    assert(mem.eql(Direction, &[_]Direction{ .U, .L, .L }, dirs[0]));
-    assert(mem.eql(Direction, &[_]Direction{ .R, .R, .D, .D, .D }, dirs[1]));
-    assert(mem.eql(Direction, &[_]Direction{ .L, .U, .R, .D, .L }, dirs[2]));
-    assert(mem.eql(Direction, &[_]Direction{ .U, .U, .U, .U, .D }, dirs[3]));
+    expectEqual(@as(usize, 4), dirs.len);
+    expectEqualSlices(Direction, &[_]Direction{ .U, .L, .L }, dirs[0]);
+    expectEqualSlices(Direction, &[_]Direction{ .R, .R, .D, .D, .D }, dirs[1]);
+    expectEqualSlices(Direction, &[_]Direction{ .L, .U, .R, .D, .L }, dirs[2]);
+    expectEqualSlices(Direction, &[_]Direction{ .U, .U, .U, .U, .D }, dirs[3]);
 }
 
 fn moveDirectionPart1(button: u8, dir: Direction) u8 {
@@ -132,21 +133,21 @@ fn moveDirectionPart2(button: u8, dir: Direction) u8 {
 }
 
 test "moveDirectionPart1" {
-    assert('1' == moveDirectionPart1('1', .L));
-    assert('3' == moveDirectionPart1('3', .U));
-    assert('3' == moveDirectionPart1('6', .U));
-    assert('9' == moveDirectionPart1('9', .R));
-    assert('7' == moveDirectionPart1('7', .L));
-    assert('5' == moveDirectionPart1('4', .R));
-    assert('7' == moveDirectionPart1('4', .D));
+    expectEqual(@as(u8, '1'), moveDirectionPart1('1', .L));
+    expectEqual(@as(u8, '3'), moveDirectionPart1('3', .U));
+    expectEqual(@as(u8, '3'), moveDirectionPart1('6', .U));
+    expectEqual(@as(u8, '9'), moveDirectionPart1('9', .R));
+    expectEqual(@as(u8, '7'), moveDirectionPart1('7', .L));
+    expectEqual(@as(u8, '5'), moveDirectionPart1('4', .R));
+    expectEqual(@as(u8, '7'), moveDirectionPart1('4', .D));
 }
 
 test "findCode" {
     var code_part1 = try findCode(std.testing.allocator, "ULL\nRRDDD\nLURDL\nUUUUD\n", moveDirectionPart1);
     defer std.testing.allocator.free(code_part1);
-    assert(mem.eql(u8, "1985", code_part1));
+    expectEqualSlices(u8, "1985", code_part1);
 
     var code_part2 = try findCode(std.testing.allocator, "ULL\nRRDDD\nLURDL\nUUUUD\n", moveDirectionPart2);
     defer std.testing.allocator.free(code_part2);
-    assert(mem.eql(u8, "5DB3", code_part2));
+    expectEqualSlices(u8, "5DB3", code_part2);
 }
