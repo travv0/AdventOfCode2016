@@ -5,24 +5,9 @@ const Allocator = std.mem.Allocator;
 const ArrayList = std.ArrayList;
 
 pub fn main() !void {
-    var pcreError: ?*const u8 = undefined;
-    var pcreErrorOffset: c_int = undefined;
-    const pcreFree = c.pcre_free orelse return error.NoPcreFree;
-    const regexCompiled = c.pcre_compile("(.*)-(.*)\\[(.*)\\]", 0, &pcreError, &pcreErrorOffset, null) orelse {
-        std.log.err("error compiling regex: {}", .{pcreError});
-        std.os.exit(1);
-    };
-    defer pcreFree(regexCompiled);
-    const regexExtra = c.pcre_study(regexCompiled, 0, &pcreError);
-    if (pcreError) |err| {
-        std.log.err("error studying regex: {}", .{err});
-        std.os.exit(1);
-    }
-    defer if (regexExtra) |re| pcreFree(re);
-
     const allocator = std.heap.page_allocator;
     const input = try util.readFileIntoString(allocator, "input.txt", 1024 * 50);
-    const realRooms = try findRealRooms(allocator, regexCompiled, regexExtra, std.fmt.trim(input));
+    const realRooms = try findRealRooms(allocator, std.fmt.trim(input));
     defer freeRooms(allocator, realRooms);
 
     var sectorIdSum: u32 = 0;
@@ -117,7 +102,22 @@ test "parseLine" {
     std.debug.assert(std.mem.eql(u8, room.checksum, "oarel"));
 }
 
-fn findRealRooms(allocator: *Allocator, regexCompiled: *c.pcre, regexExtra: ?*c.pcre_extra, input: []const u8) ![]Room {
+fn findRealRooms(allocator: *Allocator, input: []const u8) ![]Room {
+    var pcreError: ?*const u8 = undefined;
+    var pcreErrorOffset: c_int = undefined;
+    const pcreFree = c.pcre_free orelse return error.NoPcreFree;
+    const regexCompiled = c.pcre_compile("(.*)-(.*)\\[(.*)\\]", 0, &pcreError, &pcreErrorOffset, null) orelse {
+        std.log.err("error compiling regex: {}", .{pcreError});
+        std.os.exit(1);
+    };
+    defer pcreFree(regexCompiled);
+    const regexExtra = c.pcre_study(regexCompiled, 0, &pcreError);
+    if (pcreError) |err| {
+        std.log.err("error studying regex: {}", .{err});
+        std.os.exit(1);
+    }
+    defer if (regexExtra) |re| pcreFree(re);
+
     var rooms = ArrayList(Room).init(allocator);
     errdefer rooms.deinit();
     var lines = std.mem.split(input, "\n");
@@ -139,18 +139,13 @@ fn freeRooms(allocator: *Allocator, rooms: []Room) void {
 }
 
 test "findRealRooms" {
-    var pcreError: ?*const u8 = undefined;
-    var pcreErrorOffset: c_int = undefined;
-    const regexCompiled = c.pcre_compile("(.*)-(.*)\\[(.*)\\]", 0, &pcreError, &pcreErrorOffset, null).?;
-    const regexExtra = c.pcre_study(regexCompiled, 0, &pcreError);
-    defer c.pcre_free.?(regexCompiled);
     const input =
         \\\aaaaa-bbb-z-y-x-123[abxyz]
         \\\a-b-c-d-e-f-g-h-987[abcde]
         \\\not-a-real-room-404[oarel]
         \\\totally-real-room-200[decoy]
     ;
-    const rooms = try findRealRooms(std.testing.allocator, regexCompiled, regexExtra, input);
+    const rooms = try findRealRooms(std.testing.allocator, input);
     defer freeRooms(std.testing.allocator, rooms);
     std.debug.assert(3 == rooms.len);
 }
