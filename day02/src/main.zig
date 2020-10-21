@@ -5,6 +5,7 @@ const ArrayList = std.ArrayList;
 const print = std.debug.print;
 const expectEqual = std.testing.expectEqual;
 const expectEqualSlices = std.testing.expectEqualSlices;
+const expectEqualStrings = std.testing.expectEqualStrings;
 const mem = std.mem;
 
 const Direction = enum { U, R, D, L };
@@ -145,9 +146,9 @@ test "moveDirectionPart1" {
 test "findCode" {
     var code_part1 = try findCode(std.testing.allocator, "ULL\nRRDDD\nLURDL\nUUUUD\n", moveDirectionPart1);
     defer std.testing.allocator.free(code_part1);
-    expectEqualSlices(u8, "1985", code_part1);
+    expectEqualStrings("1985", code_part1);
 
     var code_part2 = try findCode(std.testing.allocator, "ULL\nRRDDD\nLURDL\nUUUUD\n", moveDirectionPart2);
     defer std.testing.allocator.free(code_part2);
-    expectEqualSlices(u8, "5DB3", code_part2);
+    expectEqualStrings("5DB3", code_part2);
 }

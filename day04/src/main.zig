@@ -98,9 +98,9 @@ test "parseLine" {
     defer c.pcre_free.?(regex_compiled);
     var room = try parseLine(std.testing.allocator, regex_compiled, regex_extra, "not-a-real-room-404[oarel]");
     defer room.deinit();
-    std.testing.expectEqualSlices(u8, "not-a-real-room", room.name);
+    std.testing.expectEqualStrings("not-a-real-room", room.name);
     std.testing.expectEqual(@as(u16, 404), room.sector_id);
-    std.testing.expectEqualSlices(u8, "oarel", room.checksum);
+    std.testing.expectEqualStrings("oarel", room.checksum);
 }
 
 fn findRealRooms(allocator: *Allocator, input: []const u8) ![]Room {
@@ -166,7 +166,7 @@ test "shiftCipher" {
     const sector_id = 343;
     var buffer: [name.len]u8 = undefined;
     shiftCipher(name, buffer[0..], sector_id);
-    std.testing.expectEqualSlices(u8, "very encrypted name", buffer[0..]);
+    std.testing.expectEqualStrings("very encrypted name", buffer[0..]);
 }
 
 fn findNorthPoleRoom(rooms: []Room) !Room {
