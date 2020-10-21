@@ -1,9 +1,19 @@
 const std = @import("std");
+const builtin = @import("builtin");
 const Builder = std.build.Builder;
 
 pub fn build(b: *Builder) void {
     const mode = b.standardReleaseOptions();
-    const target = b.standardTargetOptions(.{});
+    const target = b.standardTargetOptions(.{
+        .default_target = if (builtin.os.tag == .windows)
+            .{
+                .cpu_arch = .i386,
+                .os_tag = .windows,
+                .abi = .gnu,
+            }
+        else
+            .{},
+    });
     const days = [_][]const u8{ "day01", "day02", "day03", "day04", "day05" };
 
     const fmt = b.addFmt(&[_][]const u8{"build.zig"} ++ days);
@@ -64,5 +74,6 @@ pub fn build(b: *Builder) void {
     all_step.dependOn(test_all_step);
     all_step.dependOn(run_all_step);
 
-    b.default_step.dependOn(all_step);
+    b.default_step.dependOn(fmt_step);
+    b.default_step.dependOn(test_all_step);
 }
