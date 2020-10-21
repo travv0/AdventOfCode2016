@@ -156,7 +156,7 @@ fn shiftCipher(str: []const u8, buffer: []u8, shiftAmount: u16) void {
     for (str) |char, i| {
         if (char == '-')
             buffer[i] = ' '
-        else
+        else if ('a' <= char and char <= 'z')
             buffer[i] = @intCast(u8, (@as(u16, char) - 'a' + shiftAmount) % 26 + 'a');
     }
 }
