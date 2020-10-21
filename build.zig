@@ -10,6 +10,7 @@ pub fn build(b: *Builder) void {
 
     const build_all_step = b.step("build", "Build executables for all days.");
     const test_all_step = b.step("test", "Run all tests.");
+    const run_all_step = b.step("run-all", "Run all days.");
     inline for (days) |day| {
         const exe = b.addExecutable(day, day ++ "/main.zig");
         const tests = b.addTest(day ++ "/main.zig");
@@ -43,20 +44,25 @@ pub fn build(b: *Builder) void {
         test_step.dependOn(&tests.step);
         test_all_step.dependOn(test_step);
 
+        const log_step = b.addLog("\nResults for {}:\n", .{day});
+
         const run_cmd = exe.run();
         run_cmd.addArg(day ++ "/input.txt");
 
         const run_step = b.step("run-" ++ day, "Run the executable for" ++ day);
+        run_step.dependOn(&log_step.step);
         run_step.dependOn(&run_cmd.step);
+        run_all_step.dependOn(run_step);
     }
 
     const fmt_step = b.step("fmt", "Format source files.");
     fmt_step.dependOn(&fmt.step);
 
-    const all_step = b.step("all", "Build all days and runs all tests");
+    const all_step = b.step("all", "Run all test and all days.");
     all_step.dependOn(fmt_step);
     all_step.dependOn(build_all_step);
     all_step.dependOn(test_all_step);
+    all_step.dependOn(run_all_step);
 
     b.default_step.dependOn(all_step);
 }
