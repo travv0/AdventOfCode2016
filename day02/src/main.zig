@@ -1,5 +1,5 @@
 const std = @import("std");
-const util = @import("util.zig");
+const util = @import("util");
 const Allocator = std.mem.Allocator;
 const ArrayList = std.ArrayList;
 const print = std.debug.print;
@@ -12,7 +12,11 @@ const Direction = enum { U, R, D, L };
 
 pub fn main() anyerror!void {
     const allocator = std.heap.page_allocator;
-    const input = try util.readFileIntoString(allocator, "input.txt", 1024 * 10);
+    var args = std.process.args();
+    _ = args.skip();
+    var input_path = try args.next(allocator) orelse "input.txt";
+    defer allocator.free(input_path);
+    const input = try util.readFileIntoString(allocator, input_path, 1024 * 10);
     const code_part1 = try findCode(allocator, input, moveDirectionPart1);
     defer allocator.free(code_part1);
     print("Part 1: {}\n", .{code_part1});

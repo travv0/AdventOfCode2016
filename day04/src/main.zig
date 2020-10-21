@@ -1,12 +1,16 @@
 const std = @import("std");
-const util = @import("util.zig");
+const util = @import("util");
 const c = @cImport(@cInclude("pcre.h"));
 const Allocator = std.mem.Allocator;
 const ArrayList = std.ArrayList;
 
 pub fn main() !void {
     const allocator = std.heap.page_allocator;
-    const input = try util.readFileIntoString(allocator, "input.txt", 1024 * 50);
+    var args = std.process.args();
+    _ = args.skip();
+    var input_path = try args.next(allocator) orelse "input.txt";
+    defer allocator.free(input_path);
+    const input = try util.readFileIntoString(allocator, input_path, 1024 * 50);
     const real_rooms = try findRealRooms(allocator, input);
     defer freeRooms(allocator, real_rooms);
 

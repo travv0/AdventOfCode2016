@@ -1,12 +1,16 @@
 const std = @import("std");
-const util = @import("util.zig");
+const util = @import("util");
 const SplitIterator = std.mem.SplitIterator;
 
 const Triangle = struct { x: u16, y: u16, z: u16 };
 
 pub fn main() !void {
     const allocator = std.heap.page_allocator;
-    const input = try util.readFileIntoString(allocator, "input.txt", 1024 * 100);
+    var args = std.process.args();
+    _ = args.skip();
+    var input_path = try args.next(allocator) orelse "input.txt";
+    defer allocator.free(input_path);
+    const input = try util.readFileIntoString(allocator, input_path, 1024 * 100);
     defer allocator.free(input);
 
     const part_one_result = partOne(input);
