@@ -27,6 +27,7 @@ pub fn build(b: *Builder) !void {
     }
 
     const days = daysList.toOwnedSlice();
+    std.sort.sort([]const u8, days, {}, strLessThan);
 
     var buildZigPath = [_][]const u8{"build.zig"};
     const fmtPaths = try std.mem.concat(b.allocator, []const u8, &[_][][]const u8{ &buildZigPath, days });
@@ -99,4 +100,13 @@ pub fn build(b: *Builder) !void {
 
     b.default_step.dependOn(fmt_step);
     b.default_step.dependOn(test_all_step);
+}
+
+fn strLessThan(context: void, a: []const u8, b: []const u8) bool {
+    var i: usize = 0;
+    while (true) : (i += 1) {
+        if (a.len <= i and b.len <= i) return false else if (a.len <= i) return true else if (b.len <= i) return false;
+
+        if (a[i] < b[i]) return true;
+    }
 }
