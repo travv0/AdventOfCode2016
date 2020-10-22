@@ -36,16 +36,16 @@ pub fn build(b: *Builder) !void {
     const test_all_step = b.step("test", "Run all tests.");
     const run_all_step = b.step("run-all", "Run all days.");
     for (days) |day| {
-        const exe = b.addExecutable(day, try std.mem.concat(b.allocator, u8, &[_][]const u8{ day, "/main.zig" }));
-        const tests = b.addTest(try std.mem.concat(b.allocator, u8, &[_][]const u8{ day, "/main.zig" }));
+        const exe = b.addExecutable(day, try std.fs.path.join(b.allocator, &[_][]const u8{ day, "main.zig" }));
+        const tests = b.addTest(try std.fs.path.join(b.allocator, &[_][]const u8{ day, "main.zig" }));
 
         if (std.mem.eql(u8, day, "day04")) {
-            exe.addIncludeDir("day04/include");
-            exe.addLibPath("day04/lib");
+            exe.addIncludeDir("day04" ++ std.fs.path.sep_str ++ "include");
+            exe.addLibPath("day04" ++ std.fs.path.sep_str ++ "lib");
             exe.linkSystemLibrary("c");
             exe.linkSystemLibrary("pcre");
-            tests.addIncludeDir("day04/include");
-            tests.addLibPath("day04/lib");
+            tests.addIncludeDir("day04" ++ std.fs.path.sep_str ++ "include");
+            tests.addLibPath("day04" ++ std.fs.path.sep_str ++ "lib");
             tests.linkSystemLibrary("c");
             tests.linkSystemLibrary("pcre");
         }
@@ -58,18 +58,18 @@ pub fn build(b: *Builder) !void {
         tests.addPackagePath("util", "util.zig");
         tests.setBuildMode(mode);
         tests.setTarget(target);
-        tests.setNamePrefix(try std.mem.concat(b.allocator, u8, &[_][]const u8{ day, " " }));
+        tests.setNamePrefix(try std.fmt.allocPrint(b.allocator, "{} ", .{day}));
 
         const build_step = b.step(
-            try std.mem.concat(b.allocator, u8, &[_][]const u8{ "build-", day }),
-            try std.mem.concat(b.allocator, u8, &[_][]const u8{ "Build executable for ", day, "." }),
+            try std.fmt.allocPrint(b.allocator, "build-{}", .{day}),
+            try std.fmt.allocPrint(b.allocator, "Build executable for {}.", .{day}),
         );
         build_step.dependOn(&exe.step);
         build_all_step.dependOn(&exe.step);
 
         const test_step = b.step(
-            try std.mem.concat(b.allocator, u8, &[_][]const u8{ "test-", day }),
-            try std.mem.concat(b.allocator, u8, &[_][]const u8{ "Run all tests for ", day, "." }),
+            try std.fmt.allocPrint(b.allocator, "test-{}", .{day}),
+            try std.fmt.allocPrint(b.allocator, "Run all tests for {}.", .{day}),
         );
         test_step.dependOn(&tests.step);
         test_all_step.dependOn(test_step);
@@ -77,11 +77,11 @@ pub fn build(b: *Builder) !void {
         const log_step = b.addLog("\nResults for {}:\n", .{day});
 
         const run_cmd = exe.run();
-        run_cmd.addArg(try std.mem.concat(b.allocator, u8, &[_][]const u8{ day, "/main.zig" }));
+        run_cmd.addArg(try std.fs.path.join(b.allocator, &[_][]const u8{ day, "main.zig" }));
 
         const run_step = b.step(
-            try std.mem.concat(b.allocator, u8, &[_][]const u8{ "run-", day }),
-            try std.mem.concat(b.allocator, u8, &[_][]const u8{ "Run the executable for ", day, "." }),
+            try std.fmt.allocPrint(b.allocator, "run-{}", .{day}),
+            try std.fmt.allocPrint(b.allocator, "Run the executable for {}.", .{day}),
         );
         run_step.dependOn(&log_step.step);
         run_step.dependOn(&run_cmd.step);
