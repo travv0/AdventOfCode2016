@@ -2,7 +2,7 @@ const std = @import("std");
 const builtin = @import("builtin");
 const Builder = std.build.Builder;
 
-pub fn build(b: *Builder) void {
+pub fn build(b: *Builder) !void {
     const mode = b.standardReleaseOptions();
     const target = b.standardTargetOptions(.{
         .default_target = if (builtin.os.tag == .windows)
@@ -14,16 +14,30 @@ pub fn build(b: *Builder) void {
         else
             .{},
     });
-    const days = [_][]const u8{ "day01", "day02", "day03", "day04", "day05" };
 
-    const fmt = b.addFmt(&[_][]const u8{"build.zig"} ++ days);
+    var daysList = std.ArrayList([]const u8).init(b.allocator);
+
+    const cwd = try std.fs.cwd().openDir(".", .{ .iterate = true });
+    var iter = cwd.iterate();
+    while (try iter.next()) |entry| {
+        const name = try b.allocator.dupe(u8, entry.name);
+        if (name.len == 5 and std.mem.startsWith(u8, name, "day")) {
+            try daysList.append(name);
+        }
+    }
+
+    const days = daysList.toOwnedSlice();
+
+    var buildZigPath = [_][]const u8{"build.zig"};
+    const fmtPaths = try std.mem.concat(b.allocator, []const u8, &[_][][]const u8{ &buildZigPath, days });
+    const fmt = b.addFmt(fmtPaths);
 
     const build_all_step = b.step("build", "Build executables for all days.");
     const test_all_step = b.step("test", "Run all tests.");
     const run_all_step = b.step("run-all", "Run all days.");
-    inline for (days) |day| {
-        const exe = b.addExecutable(day, day ++ "/main.zig");
-        const tests = b.addTest(day ++ "/main.zig");
+    for (days) |day| {
+        const exe = b.addExecutable(day, try std.mem.concat(b.allocator, u8, &[_][]const u8{ day, "/main.zig" }));
+        const tests = b.addTest(try std.mem.concat(b.allocator, u8, &[_][]const u8{ day, "/main.zig" }));
 
         if (std.mem.eql(u8, day, "day04")) {
             exe.addIncludeDir("day04/include");
@@ -44,22 +58,31 @@ pub fn build(b: *Builder) void {
         tests.addPackagePath("util", "util.zig");
         tests.setBuildMode(mode);
         tests.setTarget(target);
-        tests.setNamePrefix(day ++ " ");
+        tests.setNamePrefix(try std.mem.concat(b.allocator, u8, &[_][]const u8{ day, " " }));
 
-        const build_step = b.step("build-" ++ day, "Build executable for " ++ day ++ ".");
+        const build_step = b.step(
+            try std.mem.concat(b.allocator, u8, &[_][]const u8{ "build-", day }),
+            try std.mem.concat(b.allocator, u8, &[_][]const u8{ "Build executable for ", day, "." }),
+        );
         build_step.dependOn(&exe.step);
         build_all_step.dependOn(&exe.step);
 
-        const test_step = b.step("test-" ++ day, "Run all tests for " ++ day ++ ".");
+        const test_step = b.step(
+            try std.mem.concat(b.allocator, u8, &[_][]const u8{ "test-", day }),
+            try std.mem.concat(b.allocator, u8, &[_][]const u8{ "Run all tests for ", day, "." }),
+        );
         test_step.dependOn(&tests.step);
         test_all_step.dependOn(test_step);
 
         const log_step = b.addLog("\nResults for {}:\n", .{day});
 
         const run_cmd = exe.run();
-        run_cmd.addArg(day ++ "/input.txt");
+        run_cmd.addArg(try std.mem.concat(b.allocator, u8, &[_][]const u8{ day, "/main.zig" }));
 
-        const run_step = b.step("run-" ++ day, "Run the executable for" ++ day);
+        const run_step = b.step(
+            try std.mem.concat(b.allocator, u8, &[_][]const u8{ "run-", day }),
+            try std.mem.concat(b.allocator, u8, &[_][]const u8{ "Run the executable for ", day, "." }),
+        );
         run_step.dependOn(&log_step.step);
         run_step.dependOn(&run_cmd.step);
         run_all_step.dependOn(run_step);
