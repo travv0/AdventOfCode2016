@@ -6,11 +6,7 @@ const Triangle = struct { x: u16, y: u16, z: u16 };
 
 pub fn main() !void {
     const allocator = std.heap.page_allocator;
-    var args = std.process.args();
-    _ = args.skip();
-    var input_path = try args.next(allocator) orelse "input.txt";
-    defer allocator.free(input_path);
-    const input = try util.readFileIntoString(allocator, input_path, 1024 * 100);
+    const input = try util.readInput(allocator, 1024 * 100);
     defer allocator.free(input);
 
     const part_one_result = partOne(input);
@@ -20,7 +16,7 @@ pub fn main() !void {
     std.debug.print("Part 2: {}\n", .{part_two_result});
 }
 
-fn partOne(input: []u8) u16 {
+fn partOne(input: []const u8) u16 {
     var lines = std.mem.split(std.fmt.trim(input), "\n");
     var triangles: u16 = 0;
 
@@ -39,7 +35,7 @@ fn partOne(input: []u8) u16 {
     return triangles;
 }
 
-fn partTwo(input: []u8) !u16 {
+fn partTwo(input: []const u8) !u16 {
     var lines = std.mem.split(std.fmt.trim(input), "\n");
     var triangles: u16 = 0;
     const sides = 3;

@@ -6,11 +6,8 @@ const ArrayList = std.ArrayList;
 
 pub fn main() !void {
     const allocator = std.heap.page_allocator;
-    var args = std.process.args();
-    _ = args.skip();
-    var input_path = try args.next(allocator) orelse "input.txt";
-    defer allocator.free(input_path);
-    const input = try util.readFileIntoString(allocator, input_path, 1024 * 50);
+    const input = try util.readInput(allocator, 1024 * 50);
+    defer allocator.free(input);
     const real_rooms = try findRealRooms(allocator, input);
     defer freeRooms(allocator, real_rooms);
 

@@ -12,11 +12,9 @@ const Direction = enum { U, R, D, L };
 
 pub fn main() anyerror!void {
     const allocator = std.heap.page_allocator;
-    var args = std.process.args();
-    _ = args.skip();
-    var input_path = try args.next(allocator) orelse "input.txt";
-    defer allocator.free(input_path);
-    const input = try util.readFileIntoString(allocator, input_path, 1024 * 10);
+    const input = try util.readInput(allocator, 1024 * 10);
+    defer allocator.free(input);
+
     const code_part1 = try findCode(allocator, input, moveDirectionPart1);
     defer allocator.free(code_part1);
     print("Part 1: {}\n", .{code_part1});

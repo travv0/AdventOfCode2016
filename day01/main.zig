@@ -50,11 +50,7 @@ const Coords = struct {
 
 pub fn main() anyerror!void {
     const allocator = std.heap.page_allocator;
-    var args = std.process.args();
-    _ = args.skip();
-    var input_path = try args.next(allocator) orelse "input.txt";
-    defer allocator.free(input_path);
-    const buf = try util.readFileIntoString(allocator, input_path, 1024);
+    const buf = try util.readInput(allocator, 1024);
     defer allocator.free(buf);
     const path = try makePath(allocator, buf);
     defer allocator.free(path);

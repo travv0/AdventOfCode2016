@@ -77,7 +77,7 @@ pub fn build(b: *Builder) !void {
         const log_step = b.addLog("\nResults for {}:\n", .{day});
 
         const run_cmd = exe.run();
-        run_cmd.addArg(try std.fs.path.join(b.allocator, &[_][]const u8{ day, "main.zig" }));
+        run_cmd.addArg(try std.fs.path.join(b.allocator, &[_][]const u8{ day, "input.txt" }));
 
         const run_step = b.step(
             try std.fmt.allocPrint(b.allocator, "run-{}", .{day}),
