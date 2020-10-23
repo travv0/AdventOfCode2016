@@ -27,13 +27,9 @@ pub fn main() anyerror!void {
 }
 
 fn supportsTls(ip: []const u8) bool {
-    var rest = ip;
-    while (true) {
-        const hypernetStart = std.mem.indexOfScalar(u8, rest, '[') orelse break;
-        const hypernetEnd = std.mem.indexOfScalar(u8, rest, ']') orelse break;
-        const hypernet = rest[hypernetStart + 1 .. hypernetEnd];
-        rest = rest[hypernetEnd + 1 ..];
-        if (hasAbba(hypernet)) {
+    var iter = IpIter.init(ip);
+    while (iter.next()) |section| {
+        if (section.type == .Hypernet and hasAbba(section.content)) {
             return false;
         }
     }
@@ -97,7 +93,7 @@ const Nets = struct {
     babs: [][]const u8,
 };
 
-const SectionType = enum { supernet, hypernet };
+const SectionType = enum { Supernet, Hypernet };
 
 const Section = struct {
     content: []const u8, type: SectionType
@@ -111,7 +107,7 @@ const IpIter = struct {
 
     fn init(ip: []const u8) Self {
         return .{
-            .section_type = .hypernet,
+            .section_type = .Hypernet,
             .rest = ip,
         };
     }
@@ -120,13 +116,13 @@ const IpIter = struct {
         if (self.rest.len == 0) return null;
 
         self.section_type = switch (self.section_type) {
-            .supernet => .hypernet,
-            .hypernet => .supernet,
+            .Supernet => .Hypernet,
+            .Hypernet => .Supernet,
         };
 
         const delimiter: u8 = switch (self.section_type) {
-            .supernet => '[',
-            .hypernet => ']',
+            .Supernet => '[',
+            .Hypernet => ']',
         };
         const end = std.mem.indexOfScalar(u8, self.rest, delimiter) orelse self.rest.len;
         const section = self.rest[0..end];
@@ -151,8 +147,8 @@ fn findAbasAndBabs(allocator: *Allocator, ip: []const u8) !Nets {
             const slice = section.content[i .. i + 3];
             if (isAba(slice)) {
                 try switch (section.type) {
-                    .supernet => abas.append(slice),
-                    .hypernet => babs.append(slice),
+                    .Supernet => abas.append(slice),
+                    .Hypernet => babs.append(slice),
                 };
             }
         }
