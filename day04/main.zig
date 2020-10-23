@@ -146,11 +146,12 @@ test "findRealRooms" {
         \\a-b-c-d-e-f-g-h-987[abcde]
         \\not-a-real-room-404[oarel]
         \\totally-real-room-200[decoy]
+        \\
     ;
-    const rooms = try findRealRooms(std.testing.allocator, input ++ "\n");
+    const rooms = try findRealRooms(std.testing.allocator, input);
     defer freeRooms(std.testing.allocator, rooms);
     std.testing.expectEqual(@as(usize, 3), rooms.len);
-    std.testing.expectError(error.WrongNumberOfParsedGroups, findRealRooms(std.testing.allocator, input ++ "\nasdf"));
+    std.testing.expectError(error.WrongNumberOfParsedGroups, findRealRooms(std.testing.allocator, input ++ "asdf"));
 }
 
 fn shiftCipher(str: []const u8, buffer: []u8, shiftAmount: u16) void {
