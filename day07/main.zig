@@ -68,9 +68,10 @@ test "hasAbba" {
 }
 
 fn supportsSsl(allocator: *Allocator, ip: []const u8) !bool {
-    const abas = try findAbas(allocator, ip);
+    const nets = try findAbasAndBabs(allocator, ip);
+    const abas = nets.abas;
     defer allocator.free(abas);
-    const babs = try findBabs(allocator, ip);
+    const babs = nets.babs;
     defer allocator.free(babs);
     for (abas) |aba| {
         for (babs) |bab| {
@@ -91,59 +92,62 @@ test "supportsSsl" {
     expect(try supportsSsl(testing.allocator, "zazbz[bzb]cdb"));
 }
 
-fn findAbas(allocator: *Allocator, ip: []const u8) ![][]const u8 {
+const Nets = struct {
+    abas: [][]const u8,
+    babs: [][]const u8,
+};
+
+fn findAbasAndBabs(allocator: *Allocator, ip: []const u8) !Nets {
     var abas = ArrayList([]const u8).init(allocator);
     errdefer abas.deinit();
-    var rest = ip;
-    var supernetStart: isize = -1;
-    while (true) {
-        const supernetEnd = std.mem.indexOfScalar(u8, rest, '[') orelse rest.len;
-        const supernet = rest[@intCast(usize, supernetStart + 1)..supernetEnd];
-        rest = if (supernetEnd < rest.len) rest[supernetEnd + 1 ..] else &[_]u8{};
-        var i: u16 = 0;
-        while (i < supernet.len - 2) : (i += 1) {
-            const slice = supernet[i .. i + 3];
-            if (isAba(slice)) {
-                try abas.append(slice);
-            }
-        }
-        supernetStart = @intCast(isize, std.mem.indexOfScalar(u8, rest, ']') orelse break);
-    }
-    return abas.toOwnedSlice();
-}
-
-test "findAbas" {
-    const abas = try findAbas(testing.allocator, "aba[bab]xyz");
-    defer testing.allocator.free(abas);
-    expectEqualStrings("aba", abas[0]);
-    expectEqual(@as(usize, 1), abas.len);
-}
-
-fn findBabs(allocator: *Allocator, ip: []const u8) ![][]const u8 {
     var babs = ArrayList([]const u8).init(allocator);
     errdefer babs.deinit();
+
+    var in = enum { supernet, hypernet }.supernet;
     var rest = ip;
-    while (true) {
-        const hypernetStart = std.mem.indexOfScalar(u8, rest, '[') orelse break;
-        const hypernetEnd = std.mem.indexOfScalar(u8, rest, ']') orelse break;
-        const hypernet = rest[hypernetStart + 1 .. hypernetEnd];
-        rest = rest[hypernetEnd + 1 ..];
+
+    while (rest.len > 0) {
+        const delimiter: u8 = switch (in) {
+            .supernet => '[',
+            .hypernet => ']',
+        };
+
+        const end = std.mem.indexOfScalar(u8, rest, delimiter) orelse rest.len;
+        const section = rest[0..end];
+
+        rest = if (end < rest.len) rest[end + 1 ..] else &[_]u8{};
+
         var i: u16 = 0;
-        while (i < hypernet.len - 2) : (i += 1) {
-            const slice = hypernet[i .. i + 3];
+        while (i < section.len - 2) : (i += 1) {
+            const slice = section[i .. i + 3];
             if (isAba(slice)) {
-                try babs.append(slice);
+                try switch (in) {
+                    .supernet => abas.append(slice),
+                    .hypernet => babs.append(slice),
+                };
             }
         }
+
+        in = switch (in) {
+            .supernet => .hypernet,
+            .hypernet => .supernet,
+        };
     }
-    return babs.toOwnedSlice();
+
+    return Nets{
+        .abas = abas.toOwnedSlice(),
+        .babs = babs.toOwnedSlice(),
+    };
 }
 
-test "findBabs" {
-    const babs = try findBabs(testing.allocator, "aba[bab]xyz");
-    defer testing.allocator.free(babs);
-    expectEqualStrings("bab", babs[0]);
-    expectEqual(@as(usize, 1), babs.len);
+test "findAbasAndBabs" {
+    const nets = try findAbasAndBabs(testing.allocator, "aba[bab]xyz");
+    defer testing.allocator.free(nets.abas);
+    defer testing.allocator.free(nets.babs);
+    expectEqualStrings("aba", nets.abas[0]);
+    expectEqual(@as(usize, 1), nets.abas.len);
+    expectEqualStrings("bab", nets.babs[0]);
+    expectEqual(@as(usize, 1), nets.babs.len);
 }
 
 fn isAba(section: []const u8) bool {
