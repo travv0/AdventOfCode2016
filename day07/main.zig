@@ -97,41 +97,65 @@ const Nets = struct {
     babs: [][]const u8,
 };
 
+const SectionType = enum { supernet, hypernet };
+
+const Section = struct {
+    content: []const u8, type: SectionType
+};
+
+const IpIter = struct {
+    const Self = @This();
+
+    rest: []const u8,
+    section_type: SectionType,
+
+    fn init(ip: []const u8) Self {
+        return .{
+            .section_type = .hypernet,
+            .rest = ip,
+        };
+    }
+
+    fn next(self: *Self) ?Section {
+        if (self.rest.len == 0) return null;
+
+        self.section_type = switch (self.section_type) {
+            .supernet => .hypernet,
+            .hypernet => .supernet,
+        };
+
+        const delimiter: u8 = switch (self.section_type) {
+            .supernet => '[',
+            .hypernet => ']',
+        };
+        const end = std.mem.indexOfScalar(u8, self.rest, delimiter) orelse self.rest.len;
+        const section = self.rest[0..end];
+
+        self.rest = if (end < self.rest.len) self.rest[end + 1 ..] else &[_]u8{};
+
+        return Section{ .content = section, .type = self.section_type };
+    }
+};
+
 fn findAbasAndBabs(allocator: *Allocator, ip: []const u8) !Nets {
     var abas = ArrayList([]const u8).init(allocator);
     errdefer abas.deinit();
     var babs = ArrayList([]const u8).init(allocator);
     errdefer babs.deinit();
 
-    var in = enum { supernet, hypernet }.supernet;
-    var rest = ip;
+    var iter = IpIter.init(ip);
 
-    while (rest.len > 0) {
-        const delimiter: u8 = switch (in) {
-            .supernet => '[',
-            .hypernet => ']',
-        };
-
-        const end = std.mem.indexOfScalar(u8, rest, delimiter) orelse rest.len;
-        const section = rest[0..end];
-
-        rest = if (end < rest.len) rest[end + 1 ..] else &[_]u8{};
-
+    while (iter.next()) |section| {
         var i: u16 = 0;
-        while (i < section.len - 2) : (i += 1) {
-            const slice = section[i .. i + 3];
+        while (i < section.content.len - 2) : (i += 1) {
+            const slice = section.content[i .. i + 3];
             if (isAba(slice)) {
-                try switch (in) {
+                try switch (section.type) {
                     .supernet => abas.append(slice),
                     .hypernet => babs.append(slice),
                 };
             }
         }
-
-        in = switch (in) {
-            .supernet => .hypernet,
-            .hypernet => .supernet,
-        };
     }
 
     return Nets{
