@@ -1,6 +1,8 @@
 const std = @import("std");
 const fs = std.fs;
+const mem = std.mem;
 const Allocator = std.mem.Allocator;
+const ArrayList = std.ArrayList;
 
 pub fn readFileIntoString(allocator: *Allocator, path: []const u8, max_bytes: usize) ![]const u8 {
     const file = try fs.cwd().openFile(path, .{ .read = true });
@@ -27,4 +29,15 @@ pub fn readInput(allocator: *Allocator, max_bytes: usize) ![]const u8 {
     var input_path = try getInputPath(allocator);
     defer allocator.free(input_path);
     return try readFileIntoString(allocator, input_path, max_bytes);
+}
+
+pub fn split(allocator: *Allocator, buffer: []const u8, delimiter: []const u8) ![][]const u8 {
+    var result = ArrayList([]const u8).init(allocator);
+    errdefer result.deinit();
+
+    var iter = mem.split(buffer, delimiter);
+    while (iter.next()) |text| {
+        try result.append(text);
+    }
+    return result.toOwnedSlice();
 }
