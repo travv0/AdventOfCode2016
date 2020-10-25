@@ -6,22 +6,22 @@ pub fn build(b: *Builder) !void {
     const mode = b.standardReleaseOptions();
     const target = b.standardTargetOptions(.{});
 
-    var daysList = std.ArrayList([]const u8).init(b.allocator);
+    var days_list = std.ArrayList([]const u8).init(b.allocator);
 
     const cwd = try std.fs.cwd().openDir(".", .{ .iterate = true });
     var iter = cwd.iterate();
     while (try iter.next()) |entry| {
         const name = try b.allocator.dupe(u8, entry.name);
         if (name.len == 5 and std.mem.startsWith(u8, name, "day")) {
-            try daysList.append(name);
+            try days_list.append(name);
         }
     }
 
-    const days = daysList.toOwnedSlice();
+    const days = days_list.toOwnedSlice();
     std.sort.sort([]const u8, days, {}, strLessThan);
 
-    var buildZigPath = [_][]const u8{"build.zig"};
-    const fmtPaths = try std.mem.concat(b.allocator, []const u8, &[_][][]const u8{ &buildZigPath, days });
+    var build_zig_path = [_][]const u8{"build.zig"};
+    const fmtPaths = try std.mem.concat(b.allocator, []const u8, &[_][][]const u8{ &build_zig_path, days });
     const fmt = b.addFmt(fmtPaths);
 
     const build_all_step = b.step("build", "Build executables for all days.");
@@ -107,7 +107,13 @@ pub fn build(b: *Builder) !void {
 fn strLessThan(context: void, a: []const u8, b: []const u8) bool {
     var i: usize = 0;
     while (true) : (i += 1) {
-        if (a.len <= i and b.len <= i) return false else if (a.len <= i) return true else if (b.len <= i) return false;
+        if (a.len <= i and b.len <= i) {
+            return false;
+        } else if (a.len <= i) {
+            return true;
+        } else if (b.len <= i) {
+            return false;
+        }
 
         if (a[i] < b[i]) return true;
     }
