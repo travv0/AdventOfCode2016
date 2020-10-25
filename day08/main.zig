@@ -114,10 +114,10 @@ const Screen = struct {
 
     fn runRotate(self: *Self, iter: *mem.SplitIterator) !void {
         const dir = iter.next() orelse return error.InvalidCommand;
-        const coordEql = iter.next() orelse return error.InvalidCommand;
-        var coordSplit = mem.split(coordEql, "=");
-        _ = coordSplit.next();
-        const coord = try fmt.parseUnsigned(usize, coordSplit.next() orelse return error.InvalidCommand, 10);
+        const coord_eql = iter.next() orelse return error.InvalidCommand;
+        var coord_split = mem.split(coord_eql, "=");
+        _ = coord_split.next();
+        const coord = try fmt.parseUnsigned(usize, coord_split.next() orelse return error.InvalidCommand, 10);
         _ = iter.next();
         const by = try fmt.parseUnsigned(usize, iter.next() orelse return error.InvalidCommand, 10);
         if (mem.eql(u8, dir, "row")) {

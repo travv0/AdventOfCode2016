@@ -11,19 +11,19 @@ pub fn main() anyerror!void {
     var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
     defer arena.deinit();
     const input = try util.readInput(&arena.allocator, 1000 * 1024);
-    var tlsCount: u32 = 0;
-    var sslCount: u32 = 0;
+    var tls_count: u32 = 0;
+    var ssl_count: u32 = 0;
     var lines = std.mem.split(std.fmt.trim(input), "\n");
     while (lines.next()) |line| {
         if (supportsTls(line)) {
-            tlsCount += 1;
+            tls_count += 1;
         }
         if (try supportsSsl(&arena.allocator, line)) {
-            sslCount += 1;
+            ssl_count += 1;
         }
     }
-    std.debug.print("Part 1: {}\n", .{tlsCount});
-    std.debug.print("Part 2: {}\n", .{sslCount});
+    std.debug.print("Part 1: {}\n", .{tls_count});
+    std.debug.print("Part 2: {}\n", .{ssl_count});
 }
 
 fn supportsTls(ip: []const u8) bool {

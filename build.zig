@@ -4,16 +4,7 @@ const Builder = std.build.Builder;
 
 pub fn build(b: *Builder) !void {
     const mode = b.standardReleaseOptions();
-    const target = b.standardTargetOptions(.{
-        .default_target = if (builtin.os.tag == .windows)
-            .{
-                .cpu_arch = .i386,
-                .os_tag = .windows,
-                .abi = .gnu,
-            }
-        else
-            .{},
-    });
+    const target = b.standardTargetOptions(.{});
 
     var daysList = std.ArrayList([]const u8).init(b.allocator);
 
@@ -40,25 +31,36 @@ pub fn build(b: *Builder) !void {
         const exe = b.addExecutable(day, try std.fs.path.join(b.allocator, &[_][]const u8{ day, "main.zig" }));
         const tests = b.addTest(try std.fs.path.join(b.allocator, &[_][]const u8{ day, "main.zig" }));
 
-        if (std.mem.eql(u8, day, "day04")) {
+        if (builtin.os.tag == .windows and std.mem.eql(u8, day, "day04")) {
             exe.addIncludeDir("day04" ++ std.fs.path.sep_str ++ "include");
             exe.addLibPath("day04" ++ std.fs.path.sep_str ++ "lib");
             exe.linkSystemLibrary("c");
             exe.linkSystemLibrary("pcre");
+            exe.setTarget(.{
+                .cpu_arch = .i386,
+                .os_tag = .windows,
+                .abi = .gnu,
+            });
             tests.addIncludeDir("day04" ++ std.fs.path.sep_str ++ "include");
             tests.addLibPath("day04" ++ std.fs.path.sep_str ++ "lib");
             tests.linkSystemLibrary("c");
             tests.linkSystemLibrary("pcre");
+            tests.setTarget(.{
+                .cpu_arch = .i386,
+                .os_tag = .windows,
+                .abi = .gnu,
+            });
+        } else {
+            exe.setTarget(target);
+            tests.setTarget(target);
         }
 
         exe.addPackagePath("util", "util.zig");
-        exe.setTarget(target);
         exe.setBuildMode(mode);
         exe.install();
 
         tests.addPackagePath("util", "util.zig");
         tests.setBuildMode(mode);
-        tests.setTarget(target);
         tests.setNamePrefix(try std.fmt.allocPrint(b.allocator, "{} ", .{day}));
 
         const build_step = b.step(
@@ -94,12 +96,12 @@ pub fn build(b: *Builder) !void {
 
     const all_step = b.step("all", "Run all test and all days.");
     all_step.dependOn(fmt_step);
+    all_step.dependOn(b.getInstallStep());
     all_step.dependOn(build_all_step);
     all_step.dependOn(test_all_step);
     all_step.dependOn(run_all_step);
 
     b.default_step.dependOn(fmt_step);
-    b.default_step.dependOn(test_all_step);
 }
 
 fn strLessThan(context: void, a: []const u8, b: []const u8) bool {

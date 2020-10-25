@@ -176,7 +176,6 @@ fn findNorthPoleRoom(rooms: []Room) !Room {
     for (rooms) |room| {
         shiftCipher(room.name, buffer[0..], room.sector_id);
         if (std.mem.startsWith(u8, buffer[0..], "north")) {
-            std.log.info("{}", .{buffer[0..room.name.len]});
             return room;
         }
     }
