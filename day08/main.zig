@@ -33,6 +33,9 @@ const Screen = struct {
         var pixels = try arena.allocator.alloc([]bool, height);
         for (pixels) |*row| {
             row.* = try arena.allocator.alloc(bool, width);
+            for (row.*) |*pixel| {
+                pixel.* = false;
+            }
         }
         return Screen{
             .pixels = pixels,
