@@ -30,7 +30,7 @@ pub fn main() anyerror!void {
 
 fn populateInstructionsTable(
     allocator: *Allocator,
-    instructions: *AutoHashMap(u16, Instruction),
+    instructions: *AutoHashMap(u16, *Instruction),
     lines: [][]const u8,
 ) !void {
     for (lines) |line| {
@@ -42,10 +42,13 @@ fn populateInstructionsTable(
             const low_type: InstructionType = if (mem.eql(u8, words[5], "bot")) .bot else .output;
             const high_num = try fmt.parseUnsigned(u16, words[11], 10);
             const high_type: InstructionType = if (mem.eql(u8, words[10], "bot")) .bot else .output;
-            try instructions.put(bot_num, .{
+            var instruction = try allocator.create(Instruction);
+            errdefer allocator.destroy(instruction);
+            instruction.* = .{
                 .low_to = .{ .num = low_num, .type = low_type },
                 .high_to = .{ .num = high_num, .type = high_type },
-            });
+            };
+            try instructions.put(bot_num, instruction);
         }
     }
 }
@@ -58,7 +61,7 @@ fn getResult(allocator: *Allocator, state: *State, lines: [][]const u8) !?u16 {
             const chip_num = try fmt.parseUnsigned(u16, words[1], 10);
             const bot_num = try fmt.parseUnsigned(u16, words[5], 10);
 
-            var bot = try registerBot(allocator, &state.bots, bot_num, null);
+            var bot = try registerBot(allocator, &state.bots, bot_num);
             const result = try bot.receive(state, chip_num);
             if (result != null) return result;
         }
@@ -69,8 +72,9 @@ fn getResult(allocator: *Allocator, state: *State, lines: [][]const u8) !?u16 {
 const State = struct {
     const Self = @This();
 
-    bots: AutoHashMap(u16, Bot),
-    instructions: AutoHashMap(u16, Instruction),
+    allocator: *Allocator,
+    bots: AutoHashMap(u16, *Bot),
+    instructions: AutoHashMap(u16, *Instruction),
     outputs: AutoHashMap(u16, u16),
     goal_low: u16,
     goal_high: u16,
@@ -78,12 +82,13 @@ const State = struct {
 
     fn init(allocator: *Allocator, goal_low: u16, goal_high: u16, part: u2) Self {
         return State{
-            .bots = AutoHashMap(u16, Bot).init(allocator),
-            .instructions = AutoHashMap(u16, Instruction).init(allocator),
+            .bots = AutoHashMap(u16, *Bot).init(allocator),
+            .instructions = AutoHashMap(u16, *Instruction).init(allocator),
             .outputs = AutoHashMap(u16, u16).init(allocator),
             .goal_low = goal_low,
             .goal_high = goal_high,
             .part = part,
+            .allocator = allocator,
         };
     }
 
@@ -91,8 +96,13 @@ const State = struct {
         var bots_iter = self.bots.iterator();
         while (bots_iter.next()) |kv| {
             kv.value.deinit();
+            self.allocator.destroy(kv.value);
         }
         self.bots.deinit();
+        var instructions_iter = self.instructions.iterator();
+        while (instructions_iter.next()) |kv| {
+            self.allocator.destroy(kv.value);
+        }
         self.instructions.deinit();
         self.outputs.deinit();
         self.* = undefined;
@@ -158,7 +168,7 @@ const Bot = struct {
         const low_microchip = self.microchips.pop();
         switch (instruction.low_to.type) {
             .bot => {
-                var bot = try registerBot(self.allocator, &state.bots, instruction.low_to.num, self);
+                var bot = try registerBot(self.allocator, &state.bots, instruction.low_to.num);
                 const result = try bot.receive(state, low_microchip);
                 if (result != null) return result;
             },
@@ -169,7 +179,7 @@ const Bot = struct {
         const high_microchip = self.microchips.pop();
         switch (instruction.high_to.type) {
             .bot => {
-                var bot = try registerBot(self.allocator, &state.bots, instruction.high_to.num, self);
+                var bot = try registerBot(self.allocator, &state.bots, instruction.high_to.num);
                 const result = try bot.receive(state, high_microchip);
                 if (result != null) return result;
             },
@@ -184,11 +194,15 @@ const Bot = struct {
 
 const CarryOutError = error{InstructionNotFound} || mem.Allocator.Error;
 
-fn registerBot(allocator: *Allocator, bots: *AutoHashMap(u16, Bot), bot_num: u16, old_bot: ?*Bot) !*Bot {
-    const entry = try bots.getOrPutValue(bot_num, try Bot.init(allocator, bot_num));
-    const bot = &entry.value;
-    errdefer bot.deinit();
-    return bot;
+fn registerBot(allocator: *Allocator, bots: *AutoHashMap(u16, *Bot), bot_num: u16) !*Bot {
+    const res = try bots.getOrPut(bot_num);
+    if (!res.found_existing) {
+        var bot = try allocator.create(Bot);
+        errdefer allocator.destroy(bot);
+        bot.* = try Bot.init(allocator, bot_num);
+        res.entry.value = bot;
+    }
+    return res.entry.value;
 }
 
 test "example test" {
