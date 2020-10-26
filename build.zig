@@ -31,28 +31,30 @@ pub fn build(b: *Builder) !void {
         const exe = b.addExecutable(day, try std.fs.path.join(b.allocator, &[_][]const u8{ day, "main.zig" }));
         const tests = b.addTest(try std.fs.path.join(b.allocator, &[_][]const u8{ day, "main.zig" }));
 
-        if (builtin.os.tag == .windows and std.mem.eql(u8, day, "day04")) {
+        exe.setTarget(target);
+        tests.setTarget(target);
+
+        if (std.mem.eql(u8, day, "day04")) {
             exe.addIncludeDir("day04" ++ std.fs.path.sep_str ++ "include");
             exe.addLibPath("day04" ++ std.fs.path.sep_str ++ "lib");
             exe.linkSystemLibrary("c");
             exe.linkSystemLibrary("pcre");
-            exe.setTarget(.{
-                .cpu_arch = .i386,
-                .os_tag = .windows,
-                .abi = .gnu,
-            });
             tests.addIncludeDir("day04" ++ std.fs.path.sep_str ++ "include");
             tests.addLibPath("day04" ++ std.fs.path.sep_str ++ "lib");
             tests.linkSystemLibrary("c");
             tests.linkSystemLibrary("pcre");
-            tests.setTarget(.{
-                .cpu_arch = .i386,
-                .os_tag = .windows,
-                .abi = .gnu,
-            });
-        } else {
-            exe.setTarget(target);
-            tests.setTarget(target);
+            if (builtin.os.tag == .windows) {
+                exe.setTarget(.{
+                    .cpu_arch = .i386,
+                    .os_tag = .windows,
+                    .abi = .gnu,
+                });
+                tests.setTarget(.{
+                    .cpu_arch = .i386,
+                    .os_tag = .windows,
+                    .abi = .gnu,
+                });
+            }
         }
 
         exe.addPackagePath("util", "util.zig");
