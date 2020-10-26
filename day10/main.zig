@@ -197,10 +197,9 @@ const CarryOutError = error{InstructionNotFound} || mem.Allocator.Error;
 fn registerBot(allocator: *Allocator, bots: *AutoHashMap(u16, *Bot), bot_num: u16) !*Bot {
     const res = try bots.getOrPut(bot_num);
     if (!res.found_existing) {
-        var bot = try allocator.create(Bot);
-        errdefer allocator.destroy(bot);
-        bot.* = try Bot.init(allocator, bot_num);
-        res.entry.value = bot;
+        res.entry.value = try allocator.create(Bot);
+        errdefer allocator.destroy(res.entry.value);
+        res.entry.value.* = try Bot.init(allocator, bot_num);
     }
     return res.entry.value;
 }
