@@ -117,6 +117,10 @@ fn strLessThan(context: void, a: []const u8, b: []const u8) bool {
             return false;
         }
 
-        if (a[i] < b[i]) return true;
+        if (a[i] < b[i]) {
+            return true;
+        } else if (a[i] > b[i]) {
+            return false;
+        }
     }
 }
