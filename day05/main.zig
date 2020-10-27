@@ -6,7 +6,6 @@ const mem = std.mem;
 
 pub fn main() anyerror!void {
     const input = "ugkcyxxp";
-    var output: [Md5.digest_length]u8 = undefined;
     var password: [8]u8 = undefined;
     try crackPassword(input, &password, buildPasswordPart1);
     std.debug.print("Part 1: {}\n", .{password});
