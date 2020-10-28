@@ -12,6 +12,9 @@ pub fn main() anyerror!void {
     defer c.ASPathDestroy(path);
 
     std.debug.print("Part 1: {}\n", .{c.ASPathGetCount(path) - 1});
+
+    const count = countLocationsWithinRange(50, &from, &favorite_number);
+    std.debug.print("Part 2: {}\n", .{count});
 }
 
 const Pos = struct {
@@ -53,7 +56,7 @@ fn pathNodeNeighbors(neighbors: c.ASNeighborList, node: ?*c_void, context: ?*c_v
         c.ASNeighborListAdd(neighbors, &right, 1);
     }
 
-    if (pos.x > 1) {
+    if (pos.x > 0) {
         var left = Pos{ .x = pos.x - 1, .y = pos.y };
         if (!left.isWall(favorite_number)) {
             c.ASNeighborListAdd(neighbors, &left, 1);
@@ -65,7 +68,7 @@ fn pathNodeNeighbors(neighbors: c.ASNeighborList, node: ?*c_void, context: ?*c_v
         c.ASNeighborListAdd(neighbors, &down, 1);
     }
 
-    if (pos.y > 1) {
+    if (pos.y > 0) {
         var up = Pos{ .x = pos.x, .y = pos.y - 1 };
         if (!up.isWall(favorite_number)) {
             c.ASNeighborListAdd(neighbors, &up, 1);
@@ -78,8 +81,8 @@ fn pathNodeHeuristic(from_node: ?*c_void, to_node: ?*c_void, context: ?*c_void) 
     const to = @ptrCast(?*Pos, @alignCast(8, to_node)).?;
     return @intToFloat(
         f32,
-        (absInt(@intCast(isize, from.x) - @intCast(isize, to.x)) catch @panic("!")) +
-            (absInt(@intCast(isize, from.y) - @intCast(isize, to.y)) catch @panic("!")),
+        (absInt(@intCast(isize, from.x) - @intCast(isize, to.x)) catch @panic("error taking absval")) +
+            (absInt(@intCast(isize, from.y) - @intCast(isize, to.y)) catch @panic("error taking absval")),
     );
 }
 
@@ -90,3 +93,22 @@ const path_node_source = c.ASPathNodeSource{
     .earlyExit = null,
     .nodeComparator = null,
 };
+
+fn countLocationsWithinRange(range: usize, from: *Pos, favorite_number: *usize) usize {
+    var count: usize = 0;
+    var y: usize = 0;
+    while (y < range + from.y) : (y += 1) {
+        var x: usize = 0;
+        while (x < range + from.x) : (x += 1) {
+            var to = Pos{ .x = x, .y = y };
+            const path = c.ASPathCreate(&path_node_source, favorite_number, from, &to);
+            defer c.ASPathDestroy(path);
+
+            const distance = c.ASPathGetCount(path);
+            if (distance > 0 and distance <= range + 1) {
+                count += 1;
+            }
+        }
+    }
+    return count;
+}
