@@ -77,8 +77,8 @@ fn pathNodeNeighbors(neighbors: c.ASNeighborList, node: ?*c_void, context: ?*c_v
 }
 
 fn pathNodeHeuristic(from_node: ?*c_void, to_node: ?*c_void, context: ?*c_void) callconv(.C) f32 {
-    const from = @ptrCast(?*Pos, @alignCast(8, from_node)).?;
-    const to = @ptrCast(?*Pos, @alignCast(8, to_node)).?;
+    const from = @ptrCast(?*Pos, @alignCast(@alignOf(Pos), from_node)).?;
+    const to = @ptrCast(?*Pos, @alignCast(@alignOf(Pos), to_node)).?;
     return @intToFloat(
         f32,
         (absInt(@intCast(isize, from.x) - @intCast(isize, to.x)) catch @panic("error taking absval")) +
