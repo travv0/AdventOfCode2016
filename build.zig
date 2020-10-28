@@ -78,10 +78,13 @@ pub fn build(b: *Builder) !void {
         build_step.dependOn(&exe.step);
         build_all_step.dependOn(&exe.step);
 
+        const test_log_step = b.addLog("\nTest results for {}:\n", .{day});
+
         const test_step = b.step(
             try std.fmt.allocPrint(b.allocator, "test-{}", .{day}),
             try std.fmt.allocPrint(b.allocator, "Run all tests for {}.", .{day}),
         );
+        test_step.dependOn(&test_log_step.step);
         test_step.dependOn(&tests.step);
         test_all_step.dependOn(test_step);
 
