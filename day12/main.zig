@@ -10,6 +10,7 @@ const expectEqual = std.testing.expectEqual;
 pub fn main() anyerror!void {
     const allocator = std.heap.page_allocator;
     const input = try util.readInput(allocator, 1024 * 1024);
+    defer allocator.free(input);
     const part1_result = try runProgram(allocator, input, false);
     std.debug.print("Part 1: {}\n", .{part1_result});
     const part2_result = try runProgram(allocator, input, true);
