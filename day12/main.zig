@@ -28,21 +28,11 @@ const Value = union(enum) {
     }
 };
 
-const Cpy = struct {
-    from: Value,
-    to: u8,
-};
-
-const Jnz = struct {
-    check: Value,
-    jump: isize,
-};
-
 const Command = union(enum) {
-    cpy: Cpy,
+    cpy: struct { from: Value, to: u8 },
     inc: u8,
     dec: u8,
-    jnz: Jnz,
+    jnz: struct { check: Value, jump: isize },
 };
 
 fn handleCommand(commands: []Command, registers: *AutoHashMap(u8, isize), i: usize) !usize {

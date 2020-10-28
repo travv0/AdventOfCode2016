@@ -57,6 +57,14 @@ pub fn build(b: *Builder) !void {
             }
         }
 
+        if (std.mem.eql(u8, day, "day13")) {
+            exe.addCSourceFile("AStar/AStar.c", &[_][]const u8{"-std=c99"});
+            exe.addIncludeDir("AStar");
+            exe.linkSystemLibrary("c");
+            tests.addIncludeDir("AStar");
+            tests.linkSystemLibrary("c");
+        }
+
         exe.addPackagePath("util", "util.zig");
         exe.setBuildMode(mode);
         exe.install();
