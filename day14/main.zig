@@ -10,9 +10,9 @@ const testing = std.testing;
 
 pub fn main() anyerror!void {
     const salt = "ahsbgdzn";
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-    defer _ = gpa.deinit();
-    const allocator = &gpa.allocator;
+    var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+    defer arena.deinit();
+    const allocator = &arena.allocator;
 
     const result1 = find64thKey(allocator, salt, false);
     std.debug.print("Part 1: {}\n", .{result1});
@@ -27,22 +27,19 @@ fn find64thKey(allocator: *Allocator, salt: []const u8, stretch_hash: bool) !usi
     defer threes.deinit();
     var keys = ArrayList(Char).init(allocator);
     defer keys.deinit();
-    var count: usize = 0;
+    var buf: [32]u8 = undefined;
     var i: usize = 0;
     while (true) : (i += 1) {
-        const input = try fmt.allocPrint(allocator, "{}{}", .{ salt, i });
-        defer allocator.free(input);
+        const input = try fmt.bufPrint(&buf, "{}{}", .{ salt, i });
         Md5.hash(input, &output, .{});
         if (stretch_hash) {
-            var buf: [32]u8 = undefined;
             var j: usize = 0;
             while (j < 2016) : (j += 1) {
-                var input2 = try fmt.bufPrint(&buf, "{x}", .{output});
+                const input2 = try fmt.bufPrint(&buf, "{x}", .{output});
                 Md5.hash(input2, &output, .{});
             }
         }
-        const hash = try fmt.allocPrint(allocator, "{x}", .{output});
-        defer allocator.free(hash);
+        const hash = try fmt.bufPrint(&buf, "{x}", .{output});
         try checkThrees(allocator, i, hash, &threes, &keys);
         if (keys.items.len >= 64) {
             sort.sort(Char, keys.items, {}, charLessThan);
@@ -65,8 +62,7 @@ fn checkThrees(
     threes: *AutoHashMap(usize, Char),
     keys: *ArrayList(Char),
 ) !void {
-    const maybe_c = nInARow(5, hash);
-    if (maybe_c) |c| {
+    if (nInARow(5, hash)) |c| {
         var to_remove = ArrayList(usize).init(allocator);
         defer to_remove.deinit();
         var iter = threes.iterator();
