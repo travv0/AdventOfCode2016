@@ -9,17 +9,17 @@ const sort = std.sort;
 const testing = std.testing;
 
 pub fn main() anyerror!void {
-    const input = "ahsbgdzn";
+    const salt = "ahsbgdzn";
     const allocator = std.heap.page_allocator;
 
-    const result1 = find64thKey(allocator, input, false);
+    const result1 = find64thKey(allocator, salt, false);
     std.debug.print("Part 1: {}\n", .{result1});
 
-    const result2 = find64thKey(allocator, input, true);
+    const result2 = find64thKey(allocator, salt, true);
     std.debug.print("Part 2: {}\n", .{result2});
 }
 
-fn find64thKey(allocator: *Allocator, input: []const u8, stretch_hash: bool) !usize {
+fn find64thKey(allocator: *Allocator, salt: []const u8, stretch_hash: bool) !usize {
     var output: [Md5.digest_length]u8 = undefined;
     var threes = AutoHashMap(usize, Char).init(allocator);
     defer threes.deinit();
@@ -28,9 +28,9 @@ fn find64thKey(allocator: *Allocator, input: []const u8, stretch_hash: bool) !us
     var count: usize = 0;
     var i: usize = 0;
     while (true) : (i += 1) {
-        const salt = try fmt.allocPrint(allocator, "{}{}", .{ input, i });
-        defer allocator.free(salt);
-        Md5.hash(salt, &output, .{});
+        const input = try fmt.allocPrint(allocator, "{}{}", .{ salt, i });
+        defer allocator.free(input);
+        Md5.hash(input, &output, .{});
         if (stretch_hash) {
             var buf: [32]u8 = undefined;
             var j: usize = 0;
