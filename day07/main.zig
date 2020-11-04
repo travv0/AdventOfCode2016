@@ -13,7 +13,7 @@ pub fn main() anyerror!void {
     const input = try util.readInput(&arena.allocator, 1000 * 1024);
     var tls_count: u32 = 0;
     var ssl_count: u32 = 0;
-    var lines = std.mem.split(std.fmt.trim(input), "\n");
+    var lines = std.mem.split(util.trim(input), "\n");
     while (lines.next()) |line| {
         if (supportsTls(line)) {
             tls_count += 1;

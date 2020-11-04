@@ -7,6 +7,7 @@ const expectEqual = std.testing.expectEqual;
 const expectEqualSlices = std.testing.expectEqualSlices;
 const expectEqualStrings = std.testing.expectEqualStrings;
 const mem = std.mem;
+const ascii = std.ascii;
 
 const Direction = enum { U, R, D, L };
 
@@ -44,9 +45,9 @@ fn parseInput(allocator: *Allocator, input: []const u8) ![][]Direction {
     var result = ArrayList([]Direction).init(allocator);
     errdefer result.deinit();
     var lines = if (mem.indexOf(u8, input, "\r\n") != null)
-        mem.split(std.fmt.trim(input), "\r\n")
+        mem.split(util.trim(input), "\r\n")
     else
-        mem.split(std.fmt.trim(input), "\n");
+        mem.split(util.trim(input), "\n");
     while (lines.next()) |line| {
         var dirs = try allocator.alloc(Direction, line.len);
         errdefer allocator.free(dirs);

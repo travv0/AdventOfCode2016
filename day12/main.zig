@@ -96,7 +96,7 @@ fn runProgram(allocator: *Allocator, input: []const u8, ignite: bool) !isize {
 fn parseCommands(allocator: *Allocator, input: []const u8) ![]Command {
     var commands = ArrayList(Command).init(allocator);
     errdefer commands.deinit();
-    var lines = mem.split(fmt.trim(input), "\n");
+    var lines = mem.split(util.trim(input), "\n");
     while (lines.next()) |line| {
         const words = try util.split(allocator, line, " ");
         defer allocator.free(words);

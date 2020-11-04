@@ -17,13 +17,13 @@ pub fn main() !void {
 }
 
 fn partOne(input: []const u8) u16 {
-    var lines = std.mem.split(std.fmt.trim(input), "\n");
+    var lines = std.mem.split(util.trim(input), "\n");
     var triangles: u16 = 0;
 
     while (lines.next()) |line| {
-        const x = std.fmt.trim(line[0..5]);
-        const y = std.fmt.trim(line[5..10]);
-        const z = std.fmt.trim(line[10..]);
+        const x = util.trim(line[0..5]);
+        const y = util.trim(line[5..10]);
+        const z = util.trim(line[10..]);
         const triangle = .{
             .x = parseSide(x),
             .y = parseSide(y),
@@ -36,7 +36,7 @@ fn partOne(input: []const u8) u16 {
 }
 
 fn partTwo(input: []const u8) !u16 {
-    var lines = std.mem.split(std.fmt.trim(input), "\n");
+    var lines = std.mem.split(util.trim(input), "\n");
     var triangles: u16 = 0;
     const sides = 3;
 
@@ -73,9 +73,9 @@ fn isTriangle(triangle: Triangle) bool {
 
 fn populateSides(sides: *[3][]const u8, lines: *SplitIterator) !void {
     const line = lines.next() orelse return error.WrongNumberOfLines;
-    sides[0] = std.fmt.trim(line[0..5]);
-    sides[1] = std.fmt.trim(line[5..10]);
-    sides[2] = std.fmt.trim(line[10..]);
+    sides[0] = util.trim(line[0..5]);
+    sides[1] = util.trim(line[5..10]);
+    sides[2] = util.trim(line[10..]);
 }
 
 fn parseSide(side: []const u8) u16 {

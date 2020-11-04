@@ -1,6 +1,7 @@
 const std = @import("std");
 const fs = std.fs;
 const mem = std.mem;
+const testing = std.testing;
 const Allocator = std.mem.Allocator;
 const ArrayList = std.ArrayList;
 
@@ -40,4 +41,68 @@ pub fn split(allocator: *Allocator, buffer: []const u8, delimiter: []const u8) !
         try result.append(text);
     }
     return result.toOwnedSlice();
+}
+
+pub fn trim(str: []const u8) []const u8 {
+    return mem.trim(u8, str, &std.ascii.spaces);
+}
+
+pub fn dbg(value: anytype) @TypeOf(value) {
+    std.log.debug("{}", .{value});
+    return value;
+}
+
+pub fn map(
+    comptime T: type,
+    comptime Error: type,
+    allocator: *Allocator,
+    slice: anytype,
+    context: anytype,
+    func: fn (context: @TypeOf(context), elem: ElemType(@TypeOf(slice))) Error!T,
+) ![]T {
+    var result = ArrayList(T).init(allocator);
+    for (slice) |elem| {
+        try result.append(try func(context, elem));
+    }
+    return result.toOwnedSlice();
+}
+
+pub fn every(
+    slice: anytype,
+    context: anytype,
+    predicateFn: fn (context: @TypeOf(context), elem: ElemType(@TypeOf(slice))) bool,
+) bool {
+    for (slice) |elem| {
+        if (!predicateFn(context, elem)) return false;
+    }
+    return true;
+}
+
+pub fn ElemType(comptime T: type) type {
+    return switch (@typeInfo(T)) {
+        .Pointer => |p| ElemType(p.child),
+        .Array => |a| a.child,
+        .Struct => |s| T,
+        else => @compileError("Type doesn't have elements"),
+    };
+}
+
+pub fn any(
+    slice: anytype,
+    context: anytype,
+    predicateFn: fn (context: @TypeOf(context), elem: ElemType(@TypeOf(slice))) bool,
+) bool {
+    for (slice) |elem| {
+        if (predicateFn(context, elem)) return true;
+    }
+    return false;
+}
+
+fn greaterThan(numToBeat: usize, i: usize) bool {
+    return i > numToBeat;
+}
+test "any" {
+    const items = [_]usize{ 1, 2, 3, 4 };
+    testing.expect(any(items, @as(usize, 3), greaterThan));
+    testing.expect(!any(&items, @as(usize, 4), greaterThan));
 }

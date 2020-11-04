@@ -15,8 +15,8 @@ pub fn main() anyerror!void {
     const input = try util.readInput(allocator, 1024 * 1024);
     defer allocator.free(input);
 
-    std.debug.print("Part 1: {}\n", .{try decompressedLength(fmt.trim(input), false)});
-    std.debug.print("Part 2: {}\n", .{try decompressedLength(fmt.trim(input), true)});
+    std.debug.print("Part 1: {}\n", .{try decompressedLength(util.trim(input), false)});
+    std.debug.print("Part 2: {}\n", .{try decompressedLength(util.trim(input), true)});
 }
 
 const DecompressError = error{ NoMatchingParenthesis, ParsingError } || std.fmt.ParseIntError;

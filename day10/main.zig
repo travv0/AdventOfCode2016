@@ -15,7 +15,7 @@ pub fn main() anyerror!void {
     const allocator = &arena.allocator;
 
     const input = try util.readInput(allocator, 1024 * 1024);
-    var lines = try util.split(allocator, fmt.trim(input), "\n");
+    var lines = try util.split(allocator, util.trim(input), "\n");
 
     var state_part1 = State.init(allocator, 17, 61, 1);
     try populateInstructionsTable(allocator, &state_part1.instructions, lines);
@@ -34,7 +34,7 @@ fn populateInstructionsTable(
     lines: [][]const u8,
 ) !void {
     for (lines) |line| {
-        const words = try util.split(allocator, fmt.trim(line), " ");
+        const words = try util.split(allocator, util.trim(line), " ");
         defer allocator.free(words);
         if (mem.eql(u8, words[0], "bot")) {
             const bot_num = try fmt.parseUnsigned(u16, words[1], 10);
@@ -55,7 +55,7 @@ fn populateInstructionsTable(
 
 fn getResult(allocator: *Allocator, state: *State, lines: [][]const u8) !?u16 {
     for (lines) |line| {
-        const words = try util.split(allocator, fmt.trim(line), " ");
+        const words = try util.split(allocator, util.trim(line), " ");
         defer allocator.free(words);
         if (mem.eql(u8, words[0], "value")) {
             const chip_num = try fmt.parseUnsigned(u16, words[1], 10);
@@ -218,7 +218,7 @@ test "example test" {
         \\bot 0 gives low to output 2 and high to output 0
         \\value 2 goes to bot 2
     ;
-    var lines = try util.split(allocator, fmt.trim(input), "\n");
+    var lines = try util.split(allocator, util.trim(input), "\n");
     defer allocator.free(lines);
 
     var part1: ?u16 = null;

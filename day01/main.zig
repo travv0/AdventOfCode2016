@@ -44,12 +44,20 @@ const Direction = enum {
 };
 
 const Coords = struct {
+    const Self = @This();
+
     x: i16,
     y: i16,
+
+    fn eql(self: Self, other: Self) bool {
+        return self.x == other.x and self.y == other.y;
+    }
 };
 
 pub fn main() anyerror!void {
-    const allocator = std.heap.page_allocator;
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    defer _ = gpa.deinit();
+    const allocator = &gpa.allocator;
     const buf = try util.readInput(allocator, 1024);
     defer allocator.free(buf);
     const path = try makePath(allocator, buf);
@@ -63,13 +71,13 @@ pub fn main() anyerror!void {
 }
 
 fn parseInput(allocator: *Allocator, input: []const u8) ![]Turn {
-    var parts = mem.split(fmt.trim(input), ", ");
+    var parts = mem.split(util.trim(input), ", ");
     var turns = ArrayList(Turn).init(allocator);
     errdefer turns.deinit();
 
     while (parts.next()) |part| {
         const dir: TurnDir = if (part[0] == 'R') .R else .L;
-        const dist = std.fmt.parseUnsigned(u8, part[1..], 10) catch |err| {
+        const dist = fmt.parseUnsigned(u8, part[1..], 10) catch |err| {
             util.exitWithError(err, "couldn't parse '{}' as number", .{part[1..]});
         };
         try turns.append(.{ .direction = dir, .distance = dist });
@@ -146,16 +154,14 @@ test "manhattanDistance" {
 }
 
 fn findFirstPosVisitedTwice(allocator: *Allocator, path: []const Coords) !Coords {
-    var positions = ArrayList(Coords).init(allocator);
-    defer positions.deinit();
+    var seen_positions = ArrayList(Coords).init(allocator);
+    defer seen_positions.deinit();
 
     for (path) |pos| {
-        for (positions.items) |seen_pos| {
-            if (pos.x == seen_pos.x and pos.y == seen_pos.y) {
-                return pos;
-            }
+        if (util.any(seen_positions.items, pos, Coords.eql)) {
+            return pos;
         }
-        try positions.append(pos);
+        try seen_positions.append(pos);
     }
     return error.NoCoordsSeenTwice;
 }

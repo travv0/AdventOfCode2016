@@ -122,7 +122,7 @@ fn findRealRooms(allocator: *Allocator, input: []const u8) ![]Room {
 
     var rooms = ArrayList(Room).init(allocator);
     errdefer freeRooms(allocator, rooms.items);
-    var lines = std.mem.split(std.fmt.trim(input), "\n");
+    var lines = std.mem.split(util.trim(input), "\n");
     while (lines.next()) |line| {
         var room = try parseLine(allocator, regex_compiled, regex_extra, line);
         errdefer room.deinit();

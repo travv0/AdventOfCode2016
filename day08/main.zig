@@ -12,7 +12,7 @@ pub fn main() anyerror!void {
 
     const input = try util.readInput(allocator, 1024 * 1024);
     defer allocator.free(input);
-    var lines = mem.split(fmt.trim(input), "\n");
+    var lines = mem.split(util.trim(input), "\n");
     while (lines.next()) |line| {
         try screen.runCommand(line);
     }
@@ -154,7 +154,7 @@ test "exampleTest" {
         \\rotate row y=0 by 4
         \\rotate column x=1 by 1
     ;
-    var lines = mem.split(fmt.trim(input), "\n");
+    var lines = mem.split(util.trim(input), "\n");
     while (lines.next()) |line| {
         try screen.runCommand(line);
     }
