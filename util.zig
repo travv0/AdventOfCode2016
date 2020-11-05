@@ -52,19 +52,52 @@ pub fn dbg(value: anytype) @TypeOf(value) {
     return value;
 }
 
+fn Payload(comptime T: type) type {
+    return switch (@typeInfo(T)) {
+        .ErrorUnion => |u| u.payload,
+        else => T,
+    };
+}
+
 pub fn map(
     comptime T: type,
-    comptime Error: type,
     allocator: *Allocator,
     slice: anytype,
     context: anytype,
-    func: fn (context: @TypeOf(context), elem: ElemType(@TypeOf(slice))) Error!T,
-) ![]T {
-    var result = ArrayList(T).init(allocator);
+    func: fn (context: @TypeOf(context), elem: ElemType(@TypeOf(slice))) T,
+) ![]Payload(T) {
+    const U = Payload(T);
+    var result = ArrayList(U).init(allocator);
+    errdefer result.deinit();
     for (slice) |elem| {
-        try result.append(try func(context, elem));
+        const r = func(context, elem);
+        std.log.debug("{}", .{@typeInfo(@TypeOf(r))});
+        if (@typeInfo(@TypeOf(r)) == .ErrorUnion) {
+            try result.append(try r);
+        } else {
+            try result.append(r);
+        }
     }
     return result.toOwnedSlice();
+}
+
+const Error = error{BadThingHappened};
+fn multiplyBad(by: usize, i: usize) Error!usize {
+    if (by == 2) return Error.BadThingHappened;
+    return i * by;
+}
+fn multiply(by: usize, i: usize) usize {
+    return i * by;
+}
+test "map" {
+    const items = [_]usize{ 1, 2, 3, 4 };
+    const new_items = try map(usize, testing.allocator, items, @as(usize, 2), multiply);
+    defer testing.allocator.free(new_items);
+    testing.expectEqualSlices(usize, &[_]usize{ 2, 4, 6, 8 }, new_items);
+    testing.expectError(
+        Error.BadThingHappened,
+        map(Error!usize, testing.allocator, items, @as(usize, 2), multiplyBad),
+    );
 }
 
 pub fn every(
@@ -76,6 +109,12 @@ pub fn every(
         if (!predicateFn(context, elem)) return false;
     }
     return true;
+}
+
+test "every" {
+    const items = [_]usize{ 1, 2, 3, 4 };
+    testing.expect(every(items, @as(usize, 0), greaterThan));
+    testing.expect(!every(&items, @as(usize, 1), greaterThan));
 }
 
 pub fn ElemType(comptime T: type) type {
