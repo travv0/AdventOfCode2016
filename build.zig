@@ -1,6 +1,7 @@
 const std = @import("std");
 const builtin = @import("builtin");
 const Builder = std.build.Builder;
+const Step = std.build.LibExeObjStep;
 
 pub fn build(b: *Builder) !void {
     const mode = b.standardReleaseOptions();
@@ -35,25 +36,18 @@ pub fn build(b: *Builder) !void {
         tests.setTarget(target);
 
         if (std.mem.eql(u8, day, "day04")) {
-            exe.addIncludeDir("day04" ++ std.fs.path.sep_str ++ "include");
-            exe.addLibPath("day04" ++ std.fs.path.sep_str ++ "lib");
-            exe.linkSystemLibrary("c");
-            exe.linkSystemLibrary("pcre");
-            tests.addIncludeDir("day04" ++ std.fs.path.sep_str ++ "include");
-            tests.addLibPath("day04" ++ std.fs.path.sep_str ++ "lib");
-            tests.linkSystemLibrary("c");
-            tests.linkSystemLibrary("pcre");
-            if (builtin.os.tag == .windows) {
-                exe.setTarget(.{
-                    .cpu_arch = .i386,
-                    .os_tag = .windows,
-                    .abi = .gnu,
-                });
-                tests.setTarget(.{
-                    .cpu_arch = .i386,
-                    .os_tag = .windows,
-                    .abi = .gnu,
-                });
+            for (&[_]*Step{ exe, tests }) |step| {
+                step.addIncludeDir("day04" ++ std.fs.path.sep_str ++ "include");
+                step.addLibPath("day04" ++ std.fs.path.sep_str ++ "lib");
+                step.linkSystemLibrary("c");
+                step.linkSystemLibrary("pcre");
+                if (builtin.os.tag == .windows) {
+                    step.setTarget(.{
+                        .cpu_arch = .i386,
+                        .os_tag = .windows,
+                        .abi = .gnu,
+                    });
+                }
             }
         }
 
@@ -63,12 +57,14 @@ pub fn build(b: *Builder) !void {
             exe.linkSystemLibrary("c");
         }
 
-        exe.addPackagePath("util", "util.zig");
-        exe.setBuildMode(mode);
+        for (&[_]*Step{ exe, tests }) |step| {
+            step.addPackagePath("ziter", "ziter/ziter.zig");
+            step.addPackagePath("util", "util.zig");
+            step.setBuildMode(mode);
+        }
+
         exe.install();
 
-        tests.addPackagePath("util", "util.zig");
-        tests.setBuildMode(mode);
         tests.setNamePrefix(try std.fmt.allocPrint(b.allocator, "{} ", .{day}));
 
         const build_step = b.step(

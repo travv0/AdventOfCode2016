@@ -1,5 +1,6 @@
 const std = @import("std");
 const util = @import("util");
+const it = @import("ziter");
 const fs = std.fs;
 const mem = std.mem;
 const File = fs.File;
@@ -158,7 +159,10 @@ fn findFirstPosVisitedTwice(allocator: *Allocator, path: []const Coords) !Coords
     defer seen_positions.deinit();
 
     for (path) |pos| {
-        if (util.any(seen_positions.items, pos, Coords.eql)) {
+        if (it.span(seen_positions.items) //
+            .call(it.deref, .{}) //
+            .call(it.any_ex, .{ pos, Coords.eql }))
+        {
             return pos;
         }
         try seen_positions.append(pos);

@@ -1,3 +1,6 @@
 [submodule "AStar"]
 	path = AStar
 	url = https://github.com/BigZaphod/AStar
+[submodule "ziter"]
+	path = ziter
+	url = https://github.com/Hejsil/ziter
