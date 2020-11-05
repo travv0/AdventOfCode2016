@@ -2,6 +2,7 @@ const std = @import("std");
 const util = @import("util");
 const AutoHashMap = std.hash_map.AutoHashMap;
 const Allocator = std.mem.Allocator;
+const ArenaAllocator = std.heap.ArenaAllocator;
 const ArrayList = std.ArrayList;
 const fmt = std.fmt;
 const mem = std.mem;
@@ -44,6 +45,7 @@ const State = struct {
     const Instruction = struct { low_to: InstructionInfo, high_to: InstructionInfo };
 
     allocator: *Allocator,
+    arena: ArenaAllocator,
     bots: AutoHashMap(u16, *Bot),
     instructions: AutoHashMap(u16, *Instruction),
     outputs: AutoHashMap(u16, u16),
@@ -59,23 +61,16 @@ const State = struct {
             .goal_low = goal_low,
             .goal_high = goal_high,
             .part = part,
+            .arena = ArenaAllocator.init(allocator),
             .allocator = allocator,
         };
     }
 
     fn deinit(self: *Self) void {
-        var bots_iter = self.bots.iterator();
-        while (bots_iter.next()) |kv| {
-            kv.value.deinit();
-            self.allocator.destroy(kv.value);
-        }
         self.bots.deinit();
-        var instructions_iter = self.instructions.iterator();
-        while (instructions_iter.next()) |kv| {
-            self.allocator.destroy(kv.value);
-        }
         self.instructions.deinit();
         self.outputs.deinit();
+        self.arena.deinit();
         self.* = undefined;
     }
 
@@ -89,8 +84,7 @@ const State = struct {
                 const low_type: InstructionType = if (mem.eql(u8, words[5], "bot")) .bot else .output;
                 const high_num = try fmt.parseUnsigned(u16, words[11], 10);
                 const high_type: InstructionType = if (mem.eql(u8, words[10], "bot")) .bot else .output;
-                var instruction = try state.allocator.create(Instruction);
-                errdefer state.allocator.destroy(instruction);
+                var instruction = try state.arena.allocator.create(Instruction);
                 instruction.* = .{
                     .low_to = .{ .num = low_num, .type = low_type },
                     .high_to = .{ .num = high_num, .type = high_type },
@@ -119,9 +113,8 @@ const State = struct {
     fn registerBot(state: *State, bot_num: u16) !*Bot {
         const res = try state.bots.getOrPut(bot_num);
         if (!res.found_existing) {
-            res.entry.value = try state.allocator.create(Bot);
-            errdefer state.allocator.destroy(res.entry.value);
-            res.entry.value.* = try Bot.init(state.allocator, bot_num);
+            res.entry.value = try state.arena.allocator.create(Bot);
+            res.entry.value.* = try Bot.init(&state.arena.allocator, bot_num);
         }
         return res.entry.value;
     }
