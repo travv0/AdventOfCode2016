@@ -10,67 +10,38 @@ const print = std.debug.print;
 const log = std.log;
 
 pub fn main() anyerror!void {
-    var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
-    defer arena.deinit();
-    const allocator = &arena.allocator;
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    defer _ = gpa.deinit();
+    const allocator = &gpa.allocator;
 
     const input = try util.readInput(allocator, 1024 * 1024);
+    defer allocator.free(input);
     var lines = try util.split(allocator, util.trim(input), "\n");
+    defer allocator.free(lines);
 
-    var state_part1 = State.init(allocator, 17, 61, 1);
-    try populateInstructionsTable(allocator, &state_part1.instructions, lines);
-    const part1 = try getResult(allocator, &state_part1, lines);
-    print("Part 1: {}\n", .{part1});
-
-    var state_part2 = State.init(allocator, 17, 61, 2);
-    try populateInstructionsTable(allocator, &state_part2.instructions, lines);
-    const part2 = try getResult(allocator, &state_part2, lines);
-    print("Part 2: {}\n", .{part2});
-}
-
-fn populateInstructionsTable(
-    allocator: *Allocator,
-    instructions: *AutoHashMap(u16, *Instruction),
-    lines: [][]const u8,
-) !void {
-    for (lines) |line| {
-        const words = try util.split(allocator, util.trim(line), " ");
-        defer allocator.free(words);
-        if (mem.eql(u8, words[0], "bot")) {
-            const bot_num = try fmt.parseUnsigned(u16, words[1], 10);
-            const low_num = try fmt.parseUnsigned(u16, words[6], 10);
-            const low_type: InstructionType = if (mem.eql(u8, words[5], "bot")) .bot else .output;
-            const high_num = try fmt.parseUnsigned(u16, words[11], 10);
-            const high_type: InstructionType = if (mem.eql(u8, words[10], "bot")) .bot else .output;
-            var instruction = try allocator.create(Instruction);
-            errdefer allocator.destroy(instruction);
-            instruction.* = .{
-                .low_to = .{ .num = low_num, .type = low_type },
-                .high_to = .{ .num = high_num, .type = high_type },
-            };
-            try instructions.put(bot_num, instruction);
-        }
+    // part 1
+    {
+        var state = State.init(allocator, 17, 61, 1);
+        defer state.deinit();
+        try state.populateInstructions(lines);
+        const result = try state.getResult(lines);
+        print("Part 1: {}\n", .{result});
     }
-}
 
-fn getResult(allocator: *Allocator, state: *State, lines: [][]const u8) !?u16 {
-    for (lines) |line| {
-        const words = try util.split(allocator, util.trim(line), " ");
-        defer allocator.free(words);
-        if (mem.eql(u8, words[0], "value")) {
-            const chip_num = try fmt.parseUnsigned(u16, words[1], 10);
-            const bot_num = try fmt.parseUnsigned(u16, words[5], 10);
-
-            var bot = try registerBot(allocator, &state.bots, bot_num);
-            const result = try bot.receive(state, chip_num);
-            if (result != null) return result;
-        }
-    }
-    return null;
+    // part 2
+    var state = State.init(allocator, 17, 61, 2);
+    defer state.deinit();
+    try state.populateInstructions(lines);
+    const result = try state.getResult(lines);
+    print("Part 2: {}\n", .{result});
 }
 
 const State = struct {
     const Self = @This();
+
+    const InstructionType = enum { bot, output };
+    const InstructionInfo = struct { type: InstructionType, num: u16 };
+    const Instruction = struct { low_to: InstructionInfo, high_to: InstructionInfo };
 
     allocator: *Allocator,
     bots: AutoHashMap(u16, *Bot),
@@ -107,16 +78,59 @@ const State = struct {
         self.outputs.deinit();
         self.* = undefined;
     }
+
+    fn populateInstructions(state: *State, lines: [][]const u8) !void {
+        for (lines) |line| {
+            const words = try util.split(state.allocator, util.trim(line), " ");
+            defer state.allocator.free(words);
+            if (mem.eql(u8, words[0], "bot")) {
+                const bot_num = try fmt.parseUnsigned(u16, words[1], 10);
+                const low_num = try fmt.parseUnsigned(u16, words[6], 10);
+                const low_type: InstructionType = if (mem.eql(u8, words[5], "bot")) .bot else .output;
+                const high_num = try fmt.parseUnsigned(u16, words[11], 10);
+                const high_type: InstructionType = if (mem.eql(u8, words[10], "bot")) .bot else .output;
+                var instruction = try state.allocator.create(Instruction);
+                errdefer state.allocator.destroy(instruction);
+                instruction.* = .{
+                    .low_to = .{ .num = low_num, .type = low_type },
+                    .high_to = .{ .num = high_num, .type = high_type },
+                };
+                try state.instructions.put(bot_num, instruction);
+            }
+        }
+    }
+
+    fn getResult(state: *State, lines: [][]const u8) !?u16 {
+        for (lines) |line| {
+            const words = try util.split(state.allocator, util.trim(line), " ");
+            defer state.allocator.free(words);
+            if (mem.eql(u8, words[0], "value")) {
+                const chip_num = try fmt.parseUnsigned(u16, words[1], 10);
+                const bot_num = try fmt.parseUnsigned(u16, words[5], 10);
+
+                var bot = try state.registerBot(bot_num);
+                const result = try bot.receive(state, chip_num);
+                if (result != null) return result;
+            }
+        }
+        return null;
+    }
+
+    fn registerBot(state: *State, bot_num: u16) !*Bot {
+        const res = try state.bots.getOrPut(bot_num);
+        if (!res.found_existing) {
+            res.entry.value = try state.allocator.create(Bot);
+            errdefer state.allocator.destroy(res.entry.value);
+            res.entry.value.* = try Bot.init(state.allocator, bot_num);
+        }
+        return res.entry.value;
+    }
 };
-
-const InstructionType = enum { bot, output };
-
-const InstructionInfo = struct { type: InstructionType, num: u16 };
-
-const Instruction = struct { low_to: InstructionInfo, high_to: InstructionInfo };
 
 const Bot = struct {
     const Self = @This();
+
+    const CarryOutError = error{InstructionNotFound} || mem.Allocator.Error;
 
     allocator: *Allocator,
     number: u16,
@@ -168,7 +182,7 @@ const Bot = struct {
         const low_microchip = self.microchips.pop();
         switch (instruction.low_to.type) {
             .bot => {
-                var bot = try registerBot(self.allocator, &state.bots, instruction.low_to.num);
+                var bot = try state.registerBot(instruction.low_to.num);
                 const result = try bot.receive(state, low_microchip);
                 if (result != null) return result;
             },
@@ -179,7 +193,7 @@ const Bot = struct {
         const high_microchip = self.microchips.pop();
         switch (instruction.high_to.type) {
             .bot => {
-                var bot = try registerBot(self.allocator, &state.bots, instruction.high_to.num);
+                var bot = try state.registerBot(instruction.high_to.num);
                 const result = try bot.receive(state, high_microchip);
                 if (result != null) return result;
             },
@@ -191,18 +205,6 @@ const Bot = struct {
         return null;
     }
 };
-
-const CarryOutError = error{InstructionNotFound} || mem.Allocator.Error;
-
-fn registerBot(allocator: *Allocator, bots: *AutoHashMap(u16, *Bot), bot_num: u16) !*Bot {
-    const res = try bots.getOrPut(bot_num);
-    if (!res.found_existing) {
-        res.entry.value = try allocator.create(Bot);
-        errdefer allocator.destroy(res.entry.value);
-        res.entry.value.* = try Bot.init(allocator, bot_num);
-    }
-    return res.entry.value;
-}
 
 test "example test" {
     const allocator = std.testing.allocator;
@@ -221,11 +223,8 @@ test "example test" {
     var lines = try util.split(allocator, util.trim(input), "\n");
     defer allocator.free(lines);
 
-    var part1: ?u16 = null;
-    try populateInstructionsTable(allocator, &state.instructions, lines);
-    while (part1 == null) {
-        part1 = try getResult(allocator, &state, lines);
-    }
+    try state.populateInstructions(lines);
+    const part1 = try state.getResult(lines);
 
     expectEqual(@as(?u16, 2), part1);
 }

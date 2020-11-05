@@ -12,7 +12,9 @@ const ascii = std.ascii;
 const Direction = enum { U, R, D, L };
 
 pub fn main() anyerror!void {
-    const allocator = std.heap.page_allocator;
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    defer _ = gpa.deinit();
+    const allocator = &gpa.allocator;
     const input = try util.readInput(allocator, 1024 * 10);
     defer allocator.free(input);
 
@@ -57,7 +59,7 @@ fn parseInput(allocator: *Allocator, input: []const u8) ![][]Direction {
                 'R' => .R,
                 'D' => .D,
                 'L' => .L,
-                else => util.exitWithError(error.InvalidDirection, "Character '{c}", .{c}),
+                else => util.exitWithError(error.InvalidDirection, "Character '{c}'", .{c}),
             };
         }
         try result.append(dirs);

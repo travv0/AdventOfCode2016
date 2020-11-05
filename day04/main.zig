@@ -5,7 +5,7 @@ const Allocator = std.mem.Allocator;
 const ArrayList = std.ArrayList;
 
 pub fn main() !void {
-    const allocator = std.heap.page_allocator;
+    const allocator = std.heap.c_allocator;
     const input = try util.readInput(allocator, 1024 * 50);
     defer allocator.free(input);
     const real_rooms = try findRealRooms(allocator, input);

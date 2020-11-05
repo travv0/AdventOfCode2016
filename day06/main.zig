@@ -7,13 +7,15 @@ const expectEqualStrings = std.testing.expectEqualStrings;
 pub fn main() anyerror!void {
     var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
     defer arena.deinit();
+    const allocator = &arena.allocator;
+
     var frequencies: [100][26]u8 = [_][26]u8{[_]u8{0} ** 26} ** 100;
-    const input = try util.readInput(&arena.allocator, 10 * 1024);
+    const input = try util.readInput(allocator, 10 * 1024);
     const line_len = try fillFrequencies(input, &frequencies);
 
-    const message1 = try uncorruptMessage(&arena.allocator, &frequencies, line_len, highestFrequency);
+    const message1 = try uncorruptMessage(allocator, &frequencies, line_len, highestFrequency);
     std.debug.print("Part 1: {}\n", .{message1});
-    const message2 = try uncorruptMessage(&arena.allocator, &frequencies, line_len, lowestFrequency);
+    const message2 = try uncorruptMessage(allocator, &frequencies, line_len, lowestFrequency);
     std.debug.print("Part 2: {}\n", .{message2});
 }
 

@@ -11,7 +11,9 @@ pub fn main() anyerror!void {
         util.exitWithError(error.Not64BitCpu, "Day 9 requires 64 bit CPU architecture", .{});
     }
 
-    const allocator = std.heap.page_allocator;
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    defer _ = gpa.deinit();
+    const allocator = &gpa.allocator;
     const input = try util.readInput(allocator, 1024 * 1024);
     defer allocator.free(input);
 

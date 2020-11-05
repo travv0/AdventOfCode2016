@@ -8,7 +8,9 @@ const mem = std.mem;
 const expectEqual = std.testing.expectEqual;
 
 pub fn main() anyerror!void {
-    const allocator = std.heap.page_allocator;
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    defer _ = gpa.deinit();
+    const allocator = &gpa.allocator;
     const input = try util.readInput(allocator, 1024 * 1024);
     defer allocator.free(input);
     const part1_result = try runProgram(allocator, input, false);

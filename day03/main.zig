@@ -5,7 +5,9 @@ const SplitIterator = std.mem.SplitIterator;
 const Triangle = struct { x: u16, y: u16, z: u16 };
 
 pub fn main() !void {
-    const allocator = std.heap.page_allocator;
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    defer _ = gpa.deinit();
+    const allocator = &gpa.allocator;
     const input = try util.readInput(allocator, 1024 * 100);
     defer allocator.free(input);
 

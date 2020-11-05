@@ -20,9 +20,9 @@ pub fn build(b: *Builder) !void {
     const days = days_list.toOwnedSlice();
     std.sort.sort([]const u8, days, {}, strLessThan);
 
-    var build_zig_path = [_][]const u8{"build.zig"};
-    const fmtPaths = try std.mem.concat(b.allocator, []const u8, &[_][][]const u8{ &build_zig_path, days });
-    const fmt = b.addFmt(fmtPaths);
+    var build_zig_path = [_][]const u8{ "build.zig", "util.zig" };
+    const fmt_paths = try std.mem.concat(b.allocator, []const u8, &[_][][]const u8{ &build_zig_path, days });
+    const fmt = b.addFmt(fmt_paths);
 
     const build_all_step = b.step("build", "Build executables for all days.");
     const test_all_step = b.step("test", "Run all tests.");

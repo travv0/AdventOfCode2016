@@ -10,7 +10,9 @@ const testing = std.testing;
 
 pub fn main() anyerror!void {
     const salt = "ahsbgdzn";
-    const allocator = std.heap.page_allocator;
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    defer _ = gpa.deinit();
+    const allocator = &gpa.allocator;
 
     const result1 = find64thKey(allocator, salt, false);
     std.debug.print("Part 1: {}\n", .{result1});
