@@ -1,5 +1,6 @@
 const std = @import("std");
 const util = @import("util");
+const it = @import("ziter");
 const Allocator = std.mem.Allocator;
 const ArrayList = std.ArrayList;
 const fmt = std.fmt;
@@ -33,13 +34,10 @@ fn parseLine(allocator: *Allocator, line: []const u8) !Disc {
 fn parseInput(allocator: *Allocator, input: []const u8) ![]Disc {
     const lines = try util.split(allocator, util.trim(input), "\n");
     defer allocator.free(lines);
-    var discs = ArrayList(Disc).init(allocator);
-    errdefer discs.deinit();
-    for (lines) |line| {
-        const disc = try parseLine(allocator, line);
-        try discs.append(disc);
-    }
-    return discs.toOwnedSlice();
+    return try it.span(lines) //
+        .call(it.map_ex, .{ allocator, parseLine }) //
+        .call(it.unwrap, .{}) //
+        .call(it.collect, .{allocator});
 }
 
 fn getWinningTime(comptime part: usize, allocator: *Allocator, discs: []Disc) !usize {
