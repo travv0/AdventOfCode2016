@@ -160,7 +160,6 @@ fn findFirstPosVisitedTwice(allocator: *Allocator, path: []const Coords) !Coords
 
     for (path) |pos| {
         if (it.span(seen_positions.items) //
-            .call(it.deref, .{}) //
             .call(it.any_ex, .{ pos, Coords.eql }))
         {
             return pos;
