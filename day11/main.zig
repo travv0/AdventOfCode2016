@@ -5,6 +5,7 @@ const HashSet = @import("hashset").HashSet;
 const Allocator = std.mem.Allocator;
 const ArenaAllocator = std.heap.ArenaAllocator;
 const ArrayList = std.ArrayList;
+const AutoHashMap = std.AutoHashMap;
 const LinearFifo = std.fifo.LinearFifo;
 const mem = std.mem;
 const testing = std.testing;
@@ -31,7 +32,7 @@ pub fn main() !void {
 
     std.debug.print(
         "Part 1: {}\n",
-        .{try numOfStepsToComplete(testing.allocator, &state)},
+        .{try numOfStepsToComplete(testing.allocator, state)},
     );
 
     try state.floors[0].put(.{ .element = "elerium", .kind = .generator });
@@ -41,7 +42,7 @@ pub fn main() !void {
 
     std.debug.print(
         "Part 2: {}\n",
-        .{try numOfStepsToComplete(testing.allocator, &state)},
+        .{try numOfStepsToComplete(testing.allocator, state)},
     );
 }
 
@@ -55,6 +56,7 @@ const Object = struct {
 const State = struct {
     const Self = @This();
 
+    allocator: *Allocator,
     step: usize = 0,
     floors: [4]AutoHashSet(Object),
     elevator_floor: usize = 0,
@@ -63,7 +65,7 @@ const State = struct {
         var floors: [4]AutoHashSet(Object) = undefined;
         for (floors) |*floor|
             floor.* = AutoHashSet(Object).init(allocator);
-        return Self{ .floors = floors };
+        return Self{ .floors = floors, .allocator = allocator };
     }
 
     fn deinit(self: *Self) void {
@@ -119,45 +121,38 @@ const State = struct {
         {
             var i: usize = 1;
             while (i <= 2 and i <= objects.items.len) : (i += 1) {
-                try combos.appendSlice(try combinations(Object, allocator, objects.items, i));
+                var cs = try combinations(Object, allocator, objects.items, i);
+                defer allocator.free(cs);
+                try combos.appendSlice(cs);
             }
         }
 
         for (combos.items) |combo| {
-            if (self.elevator_floor > 0) {
-                var new_state = Self.init(allocator);
-                new_state.step = self.step + 1;
-                new_state.elevator_floor = self.elevator_floor - 1;
-                for (self.floors) |f, i| {
-                    var iter = f.iterator();
-                    while (iter.next()) |obj| {
-                        try new_state.floors[i].put(obj);
+            const dirs = [_]i2{ -1, 1 };
+            for (dirs) |dir| {
+                if (dir == -1 and 0 < self.elevator_floor or
+                    dir == 1 and self.elevator_floor < self.floors.len - 1)
+                {
+                    var new_state = Self.init(allocator);
+                    new_state.step = self.step + 1;
+                    new_state.elevator_floor = @intCast(
+                        usize,
+                        @intCast(isize, self.elevator_floor) + dir,
+                    );
+                    for (self.floors) |f, i| {
+                        var iter = f.iterator();
+                        while (iter.next()) |obj| {
+                            try new_state.floors[i].put(obj);
+                        }
                     }
-                }
-                for (combo) |object| {
-                    const obj = new_state.floors[self.elevator_floor].delete(object) orelse unreachable;
-                    try new_state.floors[new_state.elevator_floor].put(obj);
-                }
-                if (new_state.isValid()) {
-                    try result.append(new_state);
-                }
-            }
-            if (self.elevator_floor < self.floors.len - 1) {
-                var new_state = Self.init(allocator);
-                new_state.step = self.step + 1;
-                new_state.elevator_floor = self.elevator_floor + 1;
-                for (self.floors) |f, i| {
-                    var iter = f.iterator();
-                    while (iter.next()) |obj| {
-                        try new_state.floors[i].put(obj);
+                    for (combo) |object| {
+                        const obj = new_state.floors[self.elevator_floor].delete(object).?;
+                        try new_state.floors[new_state.elevator_floor].put(obj);
                     }
-                }
-                for (combo) |object| {
-                    const obj = new_state.floors[self.elevator_floor].delete(object) orelse unreachable;
-                    try new_state.floors[new_state.elevator_floor].put(obj);
-                }
-                if (new_state.isValid()) {
-                    try result.append(new_state);
+                    if (new_state.isValid())
+                        try result.append(new_state)
+                    else
+                        new_state.deinit();
                 }
             }
         }
@@ -253,35 +248,62 @@ fn hashState(state: State) u64 {
 fn stateEql(state1: State, state2: State) bool {
     if (state1.elevator_floor != state2.elevator_floor)
         return false;
+    var pairs = AutoHashMap([]const u8, [2]usize).init(state1.allocator);
+    defer pairs.deinit();
+    var other_pairs = AutoHashMap([]const u8, [2]usize).init(state2.allocator);
+    defer other_pairs.deinit();
+
     for (state1.floors) |floor, i| {
-        if (floor.count() != state2.floors[i].count())
-            return false;
         var iter = floor.iterator();
         while (iter.next()) |obj| {
-            if (!state2.floors[i].exists(obj))
-                return false;
+            var result = pairs.getOrPut(obj.element) catch unreachable;
+            switch (obj.kind) {
+                .microchip => result.entry.value[0] = i,
+                .generator => result.entry.value[1] = i,
+            }
         }
+    }
+
+    for (state2.floors) |floor, i| {
+        var iter = floor.iterator();
+        while (iter.next()) |obj| {
+            var result = other_pairs.getOrPut(obj.element) catch unreachable;
+            switch (obj.kind) {
+                .microchip => result.entry.value[0] = i,
+                .generator => result.entry.value[1] = i,
+            }
+        }
+    }
+
+    var iter = pairs.iterator();
+    outer: while (iter.next()) |entry| {
+        var pair = entry.value;
+        var other_iter = other_pairs.iterator();
+        while (other_iter.next()) |other_entry| {
+            var other_pair = other_entry.value;
+            if (mem.eql(usize, &pair, &other_pair))
+                continue :outer;
+        }
+        return false;
     }
     return true;
 }
 
-const StateSet = HashSet(
-    State,
-    hashState,
-    stateEql,
-    std.hash_map.DefaultMaxLoadPercentage,
-);
+fn numOfStepsToComplete(allocator: *Allocator, state: State) !usize {
+    const StateSet = HashSet(
+        State,
+        hashState,
+        stateEql,
+        std.hash_map.DefaultMaxLoadPercentage,
+    );
 
-fn numOfStepsToComplete(allocator: *Allocator, state: *State) !usize {
     var arena = ArenaAllocator.init(allocator);
     defer arena.deinit();
-    var queue = LinearFifo(State, .Dynamic).init(allocator);
-    defer queue.deinit();
-    var discovered = StateSet.init(allocator);
-    defer discovered.deinit();
+    var queue = LinearFifo(State, .Dynamic).init(&arena.allocator);
+    var discovered = StateSet.init(&arena.allocator);
 
-    try discovered.put(state.*);
-    try queue.writeItem(state.*);
+    try discovered.put(state);
+    try queue.writeItem(state);
 
     while (queue.readableLength() > 0) {
         var v = queue.readItem() orelse return error.EmptyQueue;
@@ -289,11 +311,12 @@ fn numOfStepsToComplete(allocator: *Allocator, state: *State) !usize {
             return v.step;
 
         var adj_edges = try v.nextSteps(&arena.allocator);
-        for (adj_edges) |edge| {
-            if (!discovered.exists(edge)) {
-                try discovered.put(edge);
-                try queue.writeItem(edge);
-            }
+        for (adj_edges) |*edge| {
+            if (!discovered.exists(edge.*)) {
+                try discovered.put(edge.*);
+                try queue.writeItem(edge.*);
+            } else
+                edge.deinit();
         }
     }
     return error.NoResult;
@@ -307,5 +330,5 @@ test "find number of steps" {
     try state.floors[1].put(.{ .element = "hydrogen", .kind = .generator });
     try state.floors[2].put(.{ .element = "lithium", .kind = .generator });
 
-    testing.expectEqual(@as(usize, 11), try numOfStepsToComplete(testing.allocator, &state));
+    testing.expectEqual(@as(usize, 11), try numOfStepsToComplete(testing.allocator, state));
 }
