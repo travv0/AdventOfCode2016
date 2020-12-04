@@ -32,7 +32,7 @@ pub fn main() !void {
 
     std.debug.print(
         "Part 1: {}\n",
-        .{try numOfStepsToComplete(testing.allocator, state)},
+        .{try numOfStepsToComplete(allocator, state)},
     );
 
     try state.floors[0].put(.{ .element = "elerium", .kind = .generator });
@@ -42,7 +42,7 @@ pub fn main() !void {
 
     std.debug.print(
         "Part 2: {}\n",
-        .{try numOfStepsToComplete(testing.allocator, state)},
+        .{try numOfStepsToComplete(allocator, state)},
     );
 }
 
