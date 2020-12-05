@@ -51,10 +51,12 @@ pub fn build(b: *Builder) !void {
             }
         }
 
-        if (std.mem.eql(u8, day, "day13")) {
-            exe.addCSourceFile("AStar/AStar.c", &[_][]const u8{"-std=c99"});
-            exe.addIncludeDir("AStar");
-            exe.linkSystemLibrary("c");
+        if (std.mem.eql(u8, day, "day13") or std.mem.eql(u8, day, "day17")) {
+            for (&[_]*Step{ exe, tests }) |step| {
+                step.addCSourceFile("AStar/AStar.c", &[_][]const u8{"-std=c99"});
+                step.addIncludeDir("AStar");
+                step.linkSystemLibrary("c");
+            }
         }
 
         for (&[_]*Step{ exe, tests }) |step| {
