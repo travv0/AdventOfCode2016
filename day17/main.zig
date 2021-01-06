@@ -16,7 +16,7 @@ pub fn main() !void {
     const path = try findPath(allocator, input);
     defer if (path) |p| allocator.free(p);
 
-    std.debug.print("Part 1: {}\n", .{path});
+    std.debug.print("Part 1: {s}\n", .{path});
     std.debug.print("Part 2: {}\n", .{findLongestPathLen(allocator, input)});
 }
 
@@ -33,7 +33,7 @@ const Node = struct {
 
     fn init(arena: *ArenaAllocator, x: usize, y: usize, path: []const u8, new_dir: ?u8) !Self {
         const path_until = try if (new_dir) |nd|
-            fmt.allocPrint(&arena.allocator, "{}{c}", .{ path, nd })
+            fmt.allocPrint(&arena.allocator, "{s}{c}", .{ path, nd })
         else
             arena.allocator.dupe(u8, path);
         return Self{ .arena = arena, .x = x, .y = y, .path_until = path_until };
@@ -50,7 +50,7 @@ const Node = struct {
         var buf: [10000]u8 = undefined;
         var output: [Md5.digest_length]u8 = undefined;
         {
-            const result = try fmt.bufPrint(&buf, "{}{}", .{ input, self.path_until });
+            const result = try fmt.bufPrint(&buf, "{s}{s}", .{ input, self.path_until });
             Md5.hash(result, &output, .{});
         }
         const hash = try fmt.bufPrint(&buf, "{x}", .{output});

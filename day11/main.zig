@@ -5,7 +5,7 @@ const HashSet = @import("hashset").HashSet;
 const Allocator = std.mem.Allocator;
 const ArenaAllocator = std.heap.ArenaAllocator;
 const ArrayList = std.ArrayList;
-const AutoHashMap = std.AutoHashMap;
+const HashMap = std.HashMap;
 const LinearFifo = std.fifo.LinearFifo;
 const mem = std.mem;
 const testing = std.testing;
@@ -53,18 +53,38 @@ const Object = struct {
     kind: Kind,
 };
 
+pub fn getDeepHashFn(comptime K: type) (fn (K) u64) {
+    return struct {
+        fn hash(key: K) u64 {
+            if (comptime std.meta.trait.hasUniqueRepresentation(K)) {
+                return std.hash.Wyhash.hash(0, std.mem.asBytes(&key));
+            } else {
+                var hasher = std.hash.Wyhash.init(0);
+                std.hash.autoHashStrat(&hasher, key, .Deep);
+                return hasher.final();
+            }
+        }
+    }.hash;
+}
+
 const State = struct {
     const Self = @This();
+    const ObjectHashSet = HashSet(
+        Object,
+        getDeepHashFn(Object),
+        std.hash_map.getAutoEqlFn(Object),
+        std.hash_map.DefaultMaxLoadPercentage,
+    );
 
     allocator: *Allocator,
     step: usize = 0,
-    floors: [4]AutoHashSet(Object),
+    floors: [4]ObjectHashSet,
     elevator_floor: usize = 0,
 
     fn init(allocator: *Allocator) Self {
-        var floors: [4]AutoHashSet(Object) = undefined;
+        var floors: [4]ObjectHashSet = undefined;
         for (floors) |*floor|
-            floor.* = AutoHashSet(Object).init(allocator);
+            floor.* = ObjectHashSet.init(allocator);
         return Self{ .floors = floors, .allocator = allocator };
     }
 
@@ -245,12 +265,20 @@ fn hashState(state: State) u64 {
     return hasher.final();
 }
 
+const ElementHashMap = HashMap(
+    []const u8,
+    [2]usize,
+    getDeepHashFn([]const u8),
+    std.hash_map.getAutoEqlFn([]const u8),
+    std.hash_map.DefaultMaxLoadPercentage,
+);
+
 fn stateEql(state1: State, state2: State) bool {
     if (state1.elevator_floor != state2.elevator_floor)
         return false;
-    var pairs = AutoHashMap([]const u8, [2]usize).init(state1.allocator);
+    var pairs = ElementHashMap.init(state1.allocator);
     defer pairs.deinit();
-    var other_pairs = AutoHashMap([]const u8, [2]usize).init(state2.allocator);
+    var other_pairs = ElementHashMap.init(state2.allocator);
     defer other_pairs.deinit();
 
     for (state1.floors) |floor, i| {

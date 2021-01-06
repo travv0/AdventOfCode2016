@@ -8,9 +8,9 @@ pub fn main() anyerror!void {
     const input = "ugkcyxxp";
     var password: [8]u8 = undefined;
     try crackPassword(input, &password, buildPasswordPart1);
-    std.debug.print("Part 1: {}\n", .{password});
+    std.debug.print("Part 1: {s}\n", .{password});
     try crackPassword(input, &password, buildPasswordPart2);
-    std.debug.print("Part 2: {}\n", .{password});
+    std.debug.print("Part 2: {s}\n", .{password});
 }
 
 fn buildPasswordPart1(password: *[8]u8, hash: []const u8, index: *u4) void {
@@ -42,7 +42,7 @@ fn crackPassword(
     var i: usize = 0;
     while (password_index < 8) : (i += 1) {
         {
-            const result = try fmt.bufPrint(&buf, "{}{}", .{ input, i });
+            const result = try fmt.bufPrint(&buf, "{s}{}", .{ input, i });
             Md5.hash(result, &output, .{});
         }
         const hash = try fmt.bufPrint(&buf, "{x}", .{output});

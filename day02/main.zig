@@ -20,11 +20,11 @@ pub fn main() anyerror!void {
 
     const code_part1 = try findCode(allocator, input, moveDirectionPart1);
     defer allocator.free(code_part1);
-    print("Part 1: {}\n", .{code_part1});
+    print("Part 1: {s}\n", .{code_part1});
 
     const code_part2 = try findCode(allocator, input, moveDirectionPart2);
     defer allocator.free(code_part2);
-    print("Part 2: {}\n", .{code_part2});
+    print("Part 2: {s}\n", .{code_part2});
 }
 
 fn findCode(allocator: *Allocator, input: []const u8, moveFn: fn (u8, Direction) u8) ![]u8 {

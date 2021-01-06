@@ -68,33 +68,33 @@ pub fn build(b: *Builder) !void {
 
         exe.install();
 
-        tests.setNamePrefix(try std.fmt.allocPrint(b.allocator, "{} ", .{day}));
+        tests.setNamePrefix(try std.fmt.allocPrint(b.allocator, "{s} ", .{day}));
 
         const build_step = b.step(
-            try std.fmt.allocPrint(b.allocator, "build-{}", .{day}),
-            try std.fmt.allocPrint(b.allocator, "Build executable for {}.", .{day}),
+            try std.fmt.allocPrint(b.allocator, "build-{s}", .{day}),
+            try std.fmt.allocPrint(b.allocator, "Build executable for {s}.", .{day}),
         );
         build_step.dependOn(&exe.step);
         build_all_step.dependOn(&exe.step);
 
-        const test_log_step = b.addLog("\nTest results for {}:\n", .{day});
+        const test_log_step = b.addLog("\nTest results for {s}:\n", .{day});
 
         const test_step = b.step(
-            try std.fmt.allocPrint(b.allocator, "test-{}", .{day}),
-            try std.fmt.allocPrint(b.allocator, "Run all tests for {}.", .{day}),
+            try std.fmt.allocPrint(b.allocator, "test-{s}", .{day}),
+            try std.fmt.allocPrint(b.allocator, "Run all tests for {s}.", .{day}),
         );
         test_step.dependOn(&test_log_step.step);
         test_step.dependOn(&tests.step);
         test_all_step.dependOn(test_step);
 
-        const log_step = b.addLog("\nResults for {}:\n", .{day});
+        const log_step = b.addLog("\nResults for {s}:\n", .{day});
 
         const run_cmd = exe.run();
         run_cmd.addArg(try std.fs.path.join(b.allocator, &[_][]const u8{ day, "input.txt" }));
 
         const run_step = b.step(
-            try std.fmt.allocPrint(b.allocator, "run-{}", .{day}),
-            try std.fmt.allocPrint(b.allocator, "Run the executable for {}.", .{day}),
+            try std.fmt.allocPrint(b.allocator, "run-{s}", .{day}),
+            try std.fmt.allocPrint(b.allocator, "Run the executable for {s}.", .{day}),
         );
         run_step.dependOn(&log_step.step);
         run_step.dependOn(&run_cmd.step);

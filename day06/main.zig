@@ -14,9 +14,9 @@ pub fn main() anyerror!void {
     const line_len = try fillFrequencies(input, &frequencies);
 
     const message1 = try uncorruptMessage(allocator, &frequencies, line_len, highestFrequency);
-    std.debug.print("Part 1: {}\n", .{message1});
+    std.debug.print("Part 1: {s}\n", .{message1});
     const message2 = try uncorruptMessage(allocator, &frequencies, line_len, lowestFrequency);
-    std.debug.print("Part 2: {}\n", .{message2});
+    std.debug.print("Part 2: {s}\n", .{message2});
 }
 
 fn fillFrequencies(input: []const u8, frequencies: [][26]u8) !u8 {

@@ -30,7 +30,7 @@ fn find64thKey(allocator: *Allocator, salt: []const u8, stretch_hash: bool) !usi
     var buf: [32]u8 = undefined;
     var i: usize = 0;
     while (true) : (i += 1) {
-        const input = try fmt.bufPrint(&buf, "{}{}", .{ salt, i });
+        const input = try fmt.bufPrint(&buf, "{s}{}", .{ salt, i });
         Md5.hash(input, &output, .{});
         if (stretch_hash) {
             var j: usize = 0;
