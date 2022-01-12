@@ -13,7 +13,7 @@ const testing = std.testing;
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     defer _ = gpa.deinit();
-    const allocator = &gpa.allocator;
+    const allocator = gpa.allocator();
     const input = try util.readInput(allocator, 1024 * 1024);
     defer allocator.free(input);
 
@@ -76,12 +76,12 @@ const State = struct {
         std.hash_map.DefaultMaxLoadPercentage,
     );
 
-    allocator: *Allocator,
+    allocator: Allocator,
     step: usize = 0,
     floors: [4]ObjectHashSet,
     elevator_floor: usize = 0,
 
-    fn init(allocator: *Allocator) Self {
+    fn init(allocator: Allocator) Self {
         var floors: [4]ObjectHashSet = undefined;
         for (floors) |*floor|
             floor.* = ObjectHashSet.init(allocator);
@@ -121,7 +121,7 @@ const State = struct {
         return true;
     }
 
-    fn nextSteps(self: Self, allocator: *Allocator) ![]Self {
+    fn nextSteps(self: Self, allocator: Allocator) ![]Self {
         var result = ArrayList(Self).init(allocator);
         var floor = self.floors[self.elevator_floor];
         var objects = ArrayList(Object).init(allocator);
@@ -185,7 +185,7 @@ const CombosError = error{ OutOfMemory, ArrayTooShort };
 
 fn combinations_(
     comptime T: type,
-    allocator: *Allocator,
+    allocator: Allocator,
     arr: []const T,
     data: []T,
     result: *ArrayList([]T),
@@ -206,7 +206,7 @@ fn combinations_(
 
 fn combinations(
     comptime T: type,
-    allocator: *Allocator,
+    allocator: Allocator,
     arr: []const T,
     len: usize,
 ) ![][]T {
@@ -226,29 +226,29 @@ test "combinations" {
         defer testing.allocator.free(combos);
         defer for (combos) |combo| testing.allocator.free(combo);
 
-        testing.expectEqual(@as(usize, 10), combos.len);
-        testing.expectEqualStrings("abc", combos[0]);
-        testing.expectEqualStrings("abd", combos[1]);
-        testing.expectEqualStrings("abe", combos[2]);
-        testing.expectEqualStrings("acd", combos[3]);
-        testing.expectEqualStrings("ace", combos[4]);
-        testing.expectEqualStrings("ade", combos[5]);
-        testing.expectEqualStrings("bcd", combos[6]);
-        testing.expectEqualStrings("bce", combos[7]);
-        testing.expectEqualStrings("bde", combos[8]);
-        testing.expectEqualStrings("cde", combos[9]);
+        try testing.expectEqual(@as(usize, 10), combos.len);
+        try testing.expectEqualStrings("abc", combos[0]);
+        try testing.expectEqualStrings("abd", combos[1]);
+        try testing.expectEqualStrings("abe", combos[2]);
+        try testing.expectEqualStrings("acd", combos[3]);
+        try testing.expectEqualStrings("ace", combos[4]);
+        try testing.expectEqualStrings("ade", combos[5]);
+        try testing.expectEqualStrings("bcd", combos[6]);
+        try testing.expectEqualStrings("bce", combos[7]);
+        try testing.expectEqualStrings("bde", combos[8]);
+        try testing.expectEqualStrings("cde", combos[9]);
     }
     {
         var combos = try combinations(u8, testing.allocator, chars, 1);
         defer testing.allocator.free(combos);
         defer for (combos) |combo| testing.allocator.free(combo);
 
-        testing.expectEqual(@as(usize, 5), combos.len);
-        testing.expectEqualStrings("a", combos[0]);
-        testing.expectEqualStrings("b", combos[1]);
-        testing.expectEqualStrings("c", combos[2]);
-        testing.expectEqualStrings("d", combos[3]);
-        testing.expectEqualStrings("e", combos[4]);
+        try testing.expectEqual(@as(usize, 5), combos.len);
+        try testing.expectEqualStrings("a", combos[0]);
+        try testing.expectEqualStrings("b", combos[1]);
+        try testing.expectEqualStrings("c", combos[2]);
+        try testing.expectEqualStrings("d", combos[3]);
+        try testing.expectEqualStrings("e", combos[4]);
     }
 }
 
@@ -317,7 +317,7 @@ fn stateEql(state1: State, state2: State) bool {
     return true;
 }
 
-fn numOfStepsToComplete(allocator: *Allocator, state: State) !usize {
+fn numOfStepsToComplete(allocator: Allocator, state: State) !usize {
     const StateSet = HashSet(
         State,
         hashState,
@@ -343,8 +343,7 @@ fn numOfStepsToComplete(allocator: *Allocator, state: State) !usize {
             if (!discovered.exists(edge.*)) {
                 try discovered.put(edge.*);
                 try queue.writeItem(edge.*);
-            } else
-                edge.deinit();
+            } else edge.deinit();
         }
     }
     return error.NoResult;
@@ -358,5 +357,5 @@ test "find number of steps" {
     try state.floors[1].put(.{ .element = "hydrogen", .kind = .generator });
     try state.floors[2].put(.{ .element = "lithium", .kind = .generator });
 
-    testing.expectEqual(@as(usize, 11), try numOfStepsToComplete(testing.allocator, state));
+    try testing.expectEqual(@as(usize, 11), try numOfStepsToComplete(testing.allocator, state));
 }

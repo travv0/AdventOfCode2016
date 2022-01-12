@@ -21,7 +21,7 @@ pub fn main() anyerror!void {
     std.debug.print("Part 2: {}\n", .{result2});
 }
 
-fn find64thKey(allocator: *Allocator, salt: []const u8, stretch_hash: bool) !usize {
+fn find64thKey(allocator: Allocator, salt: []const u8, stretch_hash: bool) !usize {
     var output: [Md5.digest_length]u8 = undefined;
     var threes = AutoHashMap(usize, Char).init(allocator);
     defer threes.deinit();
@@ -56,7 +56,7 @@ pub fn charLessThan(context: void, lhs: Char, rhs: Char) bool {
 }
 
 fn checkThrees(
-    allocator: *Allocator,
+    allocator: Allocator,
     i: usize,
     hash: []const u8,
     threes: *AutoHashMap(usize, Char),
@@ -103,14 +103,14 @@ fn nInARow(n: usize, hash: []const u8) ?u8 {
 }
 
 test "nInARow" {
-    testing.expectEqual(@as(?u8, '8'), nInARow(3, "cc38887a5"));
-    testing.expectEqual(@as(?u8, 'c'), nInARow(2, "cc38887a5"));
-    testing.expectEqual(@as(?u8, '7'), nInARow(5, "cc388877777a5"));
-    testing.expectEqual(@as(?u8, null), nInARow(5, "cc38887777a5"));
+    try testing.expectEqual(@as(?u8, '8'), nInARow(3, "cc38887a5"));
+    try testing.expectEqual(@as(?u8, 'c'), nInARow(2, "cc38887a5"));
+    try testing.expectEqual(@as(?u8, '7'), nInARow(5, "cc388877777a5"));
+    try testing.expectEqual(@as(?u8, null), nInARow(5, "cc38887777a5"));
 }
 
 test "find64thKey" {
     const input = "abc";
-    testing.expectEqual(@as(usize, 22728), try find64thKey(testing.allocator, input, false));
-    testing.expectEqual(@as(usize, 22551), try find64thKey(testing.allocator, input, true));
+    try testing.expectEqual(@as(usize, 22728), try find64thKey(testing.allocator, input, false));
+    try testing.expectEqual(@as(usize, 22551), try find64thKey(testing.allocator, input, true));
 }

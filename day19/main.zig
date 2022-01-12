@@ -7,13 +7,13 @@ const Node = LinkedList.Node;
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     defer _ = gpa.deinit();
-    const allocator = &gpa.allocator;
+    const allocator = gpa.allocator();
     const input = 3018458;
     std.debug.print("Part 1: {}\n", .{playGame(1, allocator, input)});
     std.debug.print("Part 2: {}\n", .{playGame(2, allocator, input)});
 }
 
-fn playGame(comptime part: u2, allocator: *Allocator, num_of_elves: usize) !usize {
+fn playGame(comptime part: u2, allocator: Allocator, num_of_elves: usize) !usize {
     if (part != 1 and part != 2) @compileError("part must be 1 or 2");
     var arena = std.heap.ArenaAllocator.init(allocator);
     defer arena.deinit();
@@ -62,6 +62,6 @@ fn playGame(comptime part: u2, allocator: *Allocator, num_of_elves: usize) !usiz
 }
 
 test "playGame" {
-    testing.expectEqual(@as(usize, 3), try playGame(1, testing.allocator, 5));
-    testing.expectEqual(@as(usize, 2), try playGame(2, testing.allocator, 5));
+    try testing.expectEqual(@as(usize, 3), try playGame(1, testing.allocator, 5));
+    try testing.expectEqual(@as(usize, 2), try playGame(2, testing.allocator, 5));
 }

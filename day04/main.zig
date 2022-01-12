@@ -22,12 +22,12 @@ pub fn main() !void {
 }
 
 const Room = struct {
-    allocator: *Allocator,
+    allocator: Allocator,
     name: []const u8,
     sector_id: u16,
     checksum: []const u8,
 
-    fn init(allocator: *Allocator, name: []const u8, sector_id: u16, checksum: []const u8) !Room {
+    fn init(allocator: Allocator, name: []const u8, sector_id: u16, checksum: []const u8) !Room {
         var n = try allocator.alloc(u8, name.len);
         errdefer allocator.free(n);
         var cs = try allocator.alloc(u8, checksum.len);
@@ -64,7 +64,7 @@ const Room = struct {
     test "isReal" {
         var room = try Room.init(std.testing.allocator, "not-a-real-room", 404, "oarel");
         defer room.deinit();
-        std.testing.expect(room.isReal());
+        try std.testing.expect(room.isReal());
     }
 };
 
@@ -72,7 +72,7 @@ fn letterCountGreaterThan(counts: [26]u16, char1: u8, char2: u8) bool {
     return counts[char1 - 'a'] > counts[char2 - 'a'];
 }
 
-pub fn parseLine(allocator: *Allocator, regex_compiled: *c.pcre, regex_extra: ?*c.pcre_extra, line: []const u8) !Room {
+pub fn parseLine(allocator: Allocator, regex_compiled: *c.pcre, regex_extra: ?*c.pcre_extra, line: []const u8) !Room {
     const sub_strs_len = 20;
     var sub_strs: [sub_strs_len]c_int = undefined;
     var name: ?[*:0]const u8 = undefined;
@@ -99,12 +99,12 @@ test "parseLine" {
     defer c.pcre_free.?(regex_compiled);
     var room = try parseLine(std.testing.allocator, regex_compiled, regex_extra, "not-a-real-room-404[oarel]");
     defer room.deinit();
-    std.testing.expectEqualStrings("not-a-real-room", room.name);
-    std.testing.expectEqual(@as(u16, 404), room.sector_id);
-    std.testing.expectEqualStrings("oarel", room.checksum);
+    try std.testing.expectEqualStrings("not-a-real-room", room.name);
+    try std.testing.expectEqual(@as(u16, 404), room.sector_id);
+    try std.testing.expectEqualStrings("oarel", room.checksum);
 }
 
-fn findRealRooms(allocator: *Allocator, input: []const u8) ![]Room {
+fn findRealRooms(allocator: Allocator, input: []const u8) ![]Room {
     var pcre_error: ?*const u8 = undefined;
     var pcre_error_offset: c_int = undefined;
     const pcre_free = c.pcre_free orelse return error.NoPcreFree;
@@ -122,7 +122,7 @@ fn findRealRooms(allocator: *Allocator, input: []const u8) ![]Room {
 
     var rooms = ArrayList(Room).init(allocator);
     errdefer freeRooms(allocator, rooms.items);
-    var lines = std.mem.split(util.trim(input), "\n");
+    var lines = std.mem.split(u8, util.trim(input), "\n");
     while (lines.next()) |line| {
         var room = try parseLine(allocator, regex_compiled, regex_extra, line);
         errdefer room.deinit();
@@ -135,7 +135,7 @@ fn findRealRooms(allocator: *Allocator, input: []const u8) ![]Room {
     return rooms.toOwnedSlice();
 }
 
-fn freeRooms(allocator: *Allocator, rooms: []Room) void {
+fn freeRooms(allocator: Allocator, rooms: []Room) void {
     for (rooms) |*room| room.deinit();
     allocator.free(rooms);
 }
@@ -150,8 +150,8 @@ test "findRealRooms" {
     ;
     const rooms = try findRealRooms(std.testing.allocator, input);
     defer freeRooms(std.testing.allocator, rooms);
-    std.testing.expectEqual(@as(usize, 3), rooms.len);
-    std.testing.expectError(error.WrongNumberOfParsedGroups, findRealRooms(std.testing.allocator, input ++ "asdf"));
+    try std.testing.expectEqual(@as(usize, 3), rooms.len);
+    try std.testing.expectError(error.WrongNumberOfParsedGroups, findRealRooms(std.testing.allocator, input ++ "asdf"));
 }
 
 fn shiftCipher(str: []const u8, buffer: []u8, shiftAmount: u16) void {
@@ -168,7 +168,7 @@ test "shiftCipher" {
     const sector_id = 343;
     var buffer: [name.len]u8 = undefined;
     shiftCipher(name, buffer[0..], sector_id);
-    std.testing.expectEqualStrings("very encrypted name", buffer[0..]);
+    try std.testing.expectEqualStrings("very encrypted name", buffer[0..]);
 }
 
 fn findNorthPoleRoom(rooms: []Room) !Room {

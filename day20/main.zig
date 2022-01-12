@@ -8,7 +8,7 @@ const testing = std.testing;
 
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-    const allocator = &gpa.allocator;
+    const allocator = gpa.allocator();
 
     const input = try util.readInput(allocator, 1024 * 1024);
     defer allocator.free(input);
@@ -25,7 +25,7 @@ pub fn main() !void {
 
 const Range = struct { min: u32, max: u32 };
 
-fn parseRange(allocator: *Allocator, str: []const u8) !Range {
+fn parseRange(allocator: Allocator, str: []const u8) !Range {
     const parts = try util.split(allocator, util.trim(str), "-");
     defer allocator.free(parts);
     return Range{
@@ -37,20 +37,20 @@ fn parseRange(allocator: *Allocator, str: []const u8) !Range {
 test "parseRange" {
     {
         const range = try parseRange(testing.allocator, "0-2");
-        testing.expectEqual(@as(u32, 0), range.min);
-        testing.expectEqual(@as(u32, 2), range.max);
+        try testing.expectEqual(@as(u32, 0), range.min);
+        try testing.expectEqual(@as(u32, 2), range.max);
     }
     {
         const range = try parseRange(testing.allocator, "123456-4567890");
-        testing.expectEqual(@as(u32, 123456), range.min);
-        testing.expectEqual(@as(u32, 4567890), range.max);
+        try testing.expectEqual(@as(u32, 123456), range.min);
+        try testing.expectEqual(@as(u32, 4567890), range.max);
     }
 }
 
-fn parseInput(allocator: *Allocator, input: []const u8) ![]Range {
+fn parseInput(allocator: Allocator, input: []const u8) ![]Range {
     var ranges = ArrayList(Range).init(allocator);
     errdefer ranges.deinit();
-    var lines = mem.split(util.trim(input), "\n");
+    var lines = mem.split(u8, util.trim(input), "\n");
     while (lines.next()) |line| {
         try ranges.append(try parseRange(allocator, line));
     }
@@ -60,10 +60,10 @@ fn parseInput(allocator: *Allocator, input: []const u8) ![]Range {
 test "parseInput" {
     const ranges = try parseInput(testing.allocator, "0-2\n123456-4567890\n");
     defer testing.allocator.free(ranges);
-    testing.expectEqual(@as(u32, 0), ranges[0].min);
-    testing.expectEqual(@as(u32, 2), ranges[0].max);
-    testing.expectEqual(@as(u32, 123456), ranges[1].min);
-    testing.expectEqual(@as(u32, 4567890), ranges[1].max);
+    try testing.expectEqual(@as(u32, 0), ranges[0].min);
+    try testing.expectEqual(@as(u32, 2), ranges[0].max);
+    try testing.expectEqual(@as(u32, 123456), ranges[1].min);
+    try testing.expectEqual(@as(u32, 4567890), ranges[1].max);
 }
 
 fn rangeLessThan(context: void, a: Range, b: Range) bool {
@@ -107,6 +107,6 @@ test "findUnblockedIP" {
     var count: usize = 0;
     const ip = findUnblockedIp(ranges, 9, &count);
 
-    testing.expectEqual(@as(?u32, 3), ip);
-    testing.expectEqual(@as(usize, 2), count);
+    try testing.expectEqual(@as(?u32, 3), ip);
+    try testing.expectEqual(@as(usize, 2), count);
 }

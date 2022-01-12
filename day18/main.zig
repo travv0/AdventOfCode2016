@@ -8,7 +8,7 @@ const testing = std.testing;
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     defer _ = gpa.deinit();
-    const allocator = &gpa.allocator;
+    const allocator = gpa.allocator();
     const input = try util.readInput(allocator, 1024);
     defer allocator.free(input);
 
@@ -28,7 +28,7 @@ fn isTrap(left: Tile, center: Tile, right: Tile) bool {
         left != .trap and center != .trap and right == .trap;
 }
 
-fn generateRow(allocator: *Allocator, prev_row: []const Tile) ![]Tile {
+fn generateRow(allocator: Allocator, prev_row: []const Tile) ![]Tile {
     var row = try allocator.alloc(Tile, prev_row.len);
     errdefer allocator.free(row);
     var i: usize = 0;
@@ -48,16 +48,16 @@ test "generateRow" {
     {
         const row = try generateRow(testing.allocator, &[_]Tile{ .safe, .safe, .trap, .trap, .safe });
         defer testing.allocator.free(row);
-        testing.expectEqualSlices(Tile, &[_]Tile{ .safe, .trap, .trap, .trap, .trap }, row);
+        try testing.expectEqualSlices(Tile, &[_]Tile{ .safe, .trap, .trap, .trap, .trap }, row);
     }
     {
         const row = try generateRow(testing.allocator, &[_]Tile{ .safe, .trap, .trap, .trap, .trap });
         defer testing.allocator.free(row);
-        testing.expectEqualSlices(Tile, &[_]Tile{ .trap, .trap, .safe, .safe, .trap }, row);
+        try testing.expectEqualSlices(Tile, &[_]Tile{ .trap, .trap, .safe, .safe, .trap }, row);
     }
 }
 
-fn parse(allocator: *Allocator, input: []const u8) ![]Tile {
+fn parse(allocator: Allocator, input: []const u8) ![]Tile {
     var row = ArrayList(Tile).init(allocator);
     errdefer row.deinit();
     for (util.trim(input)) |c| {
@@ -73,10 +73,10 @@ fn parse(allocator: *Allocator, input: []const u8) ![]Tile {
 test "parse" {
     const row = try parse(testing.allocator, "..^^.");
     defer testing.allocator.free(row);
-    testing.expectEqualSlices(Tile, &[_]Tile{ .safe, .safe, .trap, .trap, .safe }, row);
+    try testing.expectEqualSlices(Tile, &[_]Tile{ .safe, .safe, .trap, .trap, .safe }, row);
 }
 
-fn countSafeTiles(allocator: *Allocator, start_row: []const Tile, row_count: usize) !usize {
+fn countSafeTiles(allocator: Allocator, start_row: []const Tile, row_count: usize) !usize {
     var row = try allocator.dupe(Tile, start_row);
     defer allocator.free(row);
     var safe_tiles: usize = 0;
@@ -98,5 +98,5 @@ fn countSafeTiles(allocator: *Allocator, start_row: []const Tile, row_count: usi
 test "countSafeTiles" {
     const row = try parse(testing.allocator, ".^^.^.^^^^");
     defer testing.allocator.free(row);
-    testing.expectEqual(@as(usize, 38), try countSafeTiles(testing.allocator, row, 10));
+    try testing.expectEqual(@as(usize, 38), try countSafeTiles(testing.allocator, row, 10));
 }

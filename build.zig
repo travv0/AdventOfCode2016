@@ -114,7 +114,7 @@ pub fn build(b: *Builder) !void {
     b.default_step.dependOn(fmt_step);
 }
 
-fn strLessThan(context: void, a: []const u8, b: []const u8) bool {
+fn strLessThan(_: void, a: []const u8, b: []const u8) bool {
     var i: usize = 0;
     while (true) : (i += 1) {
         if (a.len <= i and b.len <= i) {

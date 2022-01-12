@@ -10,7 +10,7 @@ const testing = std.testing;
 
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-    const allocator = &gpa.allocator;
+    const allocator = gpa.allocator();
 
     const input = "yjjvjgan";
     const path = try findPath(allocator, input);
@@ -67,8 +67,8 @@ const Context = struct { input: []const u8, part: enum { one, two } };
 
 fn pathNodeNeighbors(
     neighbors: c.ASNeighborList,
-    as_node: ?*c_void,
-    as_context: ?*c_void,
+    as_node: ?*anyopaque,
+    as_context: ?*anyopaque,
 ) callconv(.C) void {
     const node = @ptrCast(?*Node, @alignCast(@alignOf(Node), as_node)).?;
     const context = @ptrCast(?*Context, @alignCast(@alignOf(Context), as_context)).?;
@@ -112,9 +112,9 @@ fn pathNodeNeighbors(
 
 fn earlyExit(
     visited_count: usize,
-    visiting_node: ?*c_void,
-    goal_node: ?*c_void,
-    context: ?*c_void,
+    visiting_node: ?*anyopaque,
+    goal_node: ?*anyopaque,
+    context: ?*anyopaque,
 ) callconv(.C) c_int {
     const node1 = @ptrCast(?*Node, @alignCast(@alignOf(Node), visiting_node)).?;
     const node2 = @ptrCast(?*Node, @alignCast(@alignOf(Node), goal_node)).?;
@@ -132,7 +132,7 @@ const path_node_source = c.ASPathNodeSource{
     .nodeComparator = null,
 };
 
-fn findPath(allocator: *Allocator, input: []const u8) !?[]const u8 {
+fn findPath(allocator: Allocator, input: []const u8) !?[]const u8 {
     var arena = std.heap.ArenaAllocator.init(allocator);
     defer arena.deinit();
 
@@ -161,21 +161,21 @@ test "findPath" {
     {
         const path = (try findPath(testing.allocator, "ihgpwlah")).?;
         defer testing.allocator.free(path);
-        testing.expectEqualStrings("DDRRRD", path);
+        try testing.expectEqualStrings("DDRRRD", path);
     }
     {
         const path = (try findPath(testing.allocator, "kglvqrro")).?;
         defer testing.allocator.free(path);
-        testing.expectEqualStrings("DDUDRLRRUDRD", path);
+        try testing.expectEqualStrings("DDUDRLRRUDRD", path);
     }
     {
         const path = (try findPath(testing.allocator, "ulqzkmiv")).?;
         defer testing.allocator.free(path);
-        testing.expectEqualStrings("DRURDRUDDLLDLUURRDULRLDUUDDDRR", path);
+        try testing.expectEqualStrings("DRURDRUDDLLDLUURRDULRLDUUDDDRR", path);
     }
 }
 
-fn findLongestPathLen(allocator: *Allocator, input: []const u8) !usize {
+fn findLongestPathLen(allocator: Allocator, input: []const u8) !usize {
     var arena = std.heap.ArenaAllocator.init(allocator);
     defer arena.deinit();
 
@@ -196,14 +196,14 @@ fn findLongestPathLen(allocator: *Allocator, input: []const u8) !usize {
 test "findLongestPathLength" {
     {
         const path_len = try findLongestPathLen(testing.allocator, "ihgpwlah");
-        testing.expectEqual(@as(usize, 370), path_len);
+        try testing.expectEqual(@as(usize, 370), path_len);
     }
     {
         const path_len = try findLongestPathLen(testing.allocator, "kglvqrro");
-        testing.expectEqual(@as(usize, 492), path_len);
+        try testing.expectEqual(@as(usize, 492), path_len);
     }
     {
         const path_len = try findLongestPathLen(testing.allocator, "ulqzkmiv");
-        testing.expectEqual(@as(usize, 830), path_len);
+        try testing.expectEqual(@as(usize, 830), path_len);
     }
 }

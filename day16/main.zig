@@ -8,7 +8,7 @@ const testing = std.testing;
 pub fn main() anyerror!void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     defer _ = gpa.deinit();
-    const allocator = &gpa.allocator;
+    const allocator = gpa.allocator();
 
     const input = "01000100010010111";
     const bits = try parseBits(allocator, input);
@@ -36,7 +36,7 @@ pub fn main() anyerror!void {
     }
 }
 
-fn parseBits(allocator: *Allocator, input: []const u8) ![]u1 {
+fn parseBits(allocator: Allocator, input: []const u8) ![]u1 {
     var bits = try allocator.alloc(u1, input.len);
     for (input) |c, i|
         bits[i] = @intCast(u1, c - '0');
@@ -46,16 +46,16 @@ fn parseBits(allocator: *Allocator, input: []const u8) ![]u1 {
 test "parseBits" {
     const bits = try parseBits(testing.allocator, "11010010101");
     defer testing.allocator.free(bits);
-    testing.expectEqualSlices(u1, &[_]u1{ 1, 1, 0, 1, 0, 0, 1, 0, 1, 0, 1 }, bits);
+    try testing.expectEqualSlices(u1, &[_]u1{ 1, 1, 0, 1, 0, 0, 1, 0, 1, 0, 1 }, bits);
 }
 
-fn calculateAnswer(allocator: *Allocator, input: []const u1, goal_len: usize) ![]u1 {
+fn calculateAnswer(allocator: Allocator, input: []const u1, goal_len: usize) ![]u1 {
     const data = try generateData(allocator, input, goal_len);
     defer allocator.free(data);
     return try calculateChecksum(allocator, data, goal_len);
 }
 
-fn generateData(allocator: *Allocator, initial_data: []const u1, goal_len: usize) ![]u1 {
+fn generateData(allocator: Allocator, initial_data: []const u1, goal_len: usize) ![]u1 {
     var result = ArrayList(u1).init(allocator);
     errdefer result.deinit();
     try result.appendSlice(initial_data);
@@ -75,22 +75,22 @@ test "generateData" {
     {
         const result = try generateData(testing.allocator, &[_]u1{1}, 3);
         defer testing.allocator.free(result);
-        testing.expectEqualSlices(u1, &[_]u1{ 1, 0, 0 }, result);
+        try testing.expectEqualSlices(u1, &[_]u1{ 1, 0, 0 }, result);
     }
     {
         const result = try generateData(testing.allocator, &[_]u1{0}, 3);
         defer testing.allocator.free(result);
-        testing.expectEqualSlices(u1, &[_]u1{ 0, 0, 1 }, result);
+        try testing.expectEqualSlices(u1, &[_]u1{ 0, 0, 1 }, result);
     }
     {
         const result = try generateData(testing.allocator, &[_]u1{ 1, 1, 1, 1, 1 }, 11);
         defer testing.allocator.free(result);
-        testing.expectEqualSlices(u1, &[_]u1{ 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0 }, result);
+        try testing.expectEqualSlices(u1, &[_]u1{ 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0 }, result);
     }
     {
         const result = try generateData(testing.allocator, &[_]u1{ 1, 1, 1, 1, 0, 0, 0, 0, 1, 0, 1, 0 }, 25);
         defer testing.allocator.free(result);
-        testing.expectEqualSlices(
+        try testing.expectEqualSlices(
             u1,
             &[_]u1{ 1, 1, 1, 1, 0, 0, 0, 0, 1, 0, 1, 0, 0, 1, 0, 1, 0, 1, 1, 1, 1, 0, 0, 0, 0 },
             result,
@@ -98,7 +98,7 @@ test "generateData" {
     }
 }
 
-fn calculateChecksum(allocator: *Allocator, data: []const u1, goal_len: usize) ![]u1 {
+fn calculateChecksum(allocator: Allocator, data: []const u1, goal_len: usize) ![]u1 {
     var result = ArrayList(u1).init(allocator);
     errdefer result.deinit();
     try result.appendSlice(data[0..goal_len]);
@@ -125,11 +125,11 @@ test "calculateChecksum" {
         12,
     );
     defer testing.allocator.free(result);
-    testing.expectEqualSlices(u1, &[_]u1{ 1, 0, 0 }, result);
+    try testing.expectEqualSlices(u1, &[_]u1{ 1, 0, 0 }, result);
 }
 
 test "calculateAnswer" {
     const checksum = try calculateAnswer(testing.allocator, &[_]u1{ 1, 0, 0, 0, 0 }, 20);
     defer testing.allocator.free(checksum);
-    testing.expectEqualSlices(u1, &[_]u1{ 0, 1, 1, 0, 0 }, checksum);
+    try testing.expectEqualSlices(u1, &[_]u1{ 0, 1, 1, 0, 0 }, checksum);
 }

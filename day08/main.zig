@@ -8,13 +8,13 @@ const ArenaAllocator = std.heap.ArenaAllocator;
 pub fn main() anyerror!void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     defer _ = gpa.deinit();
-    const allocator = &gpa.allocator;
+    const allocator = gpa.allocator();
     var screen = try Screen.init(allocator, 50, 6);
     defer screen.deinit();
 
     const input = try util.readInput(allocator, 1024 * 1024);
     defer allocator.free(input);
-    var lines = mem.split(util.trim(input), "\n");
+    var lines = mem.split(u8, util.trim(input), "\n");
     while (lines.next()) |line| {
         try screen.runCommand(line);
     }
@@ -30,11 +30,12 @@ const Screen = struct {
     pixels: [][]bool,
     arena: ArenaAllocator,
 
-    fn init(allocator: *Allocator, width: usize, height: usize) !Self {
+    fn init(allocator: Allocator, width: usize, height: usize) !Self {
         var arena = std.heap.ArenaAllocator.init(allocator);
-        var pixels = try arena.allocator.alloc([]bool, height);
+        const aa = arena.allocator();
+        var pixels = try aa.alloc([]bool, height);
         for (pixels) |*row| {
-            row.* = try arena.allocator.alloc(bool, width);
+            row.* = try aa.alloc(bool, width);
             for (row.*) |*pixel| {
                 pixel.* = false;
             }
@@ -99,7 +100,7 @@ const Screen = struct {
     }
 
     fn runCommand(self: *Self, line: []const u8) !void {
-        var words = mem.split(line, " ");
+        var words = mem.split(u8, line, " ");
         const command = words.next() orelse return error.InvalidCommand;
         if (mem.eql(u8, command, "rect")) {
             try self.runRect(words.next() orelse return error.InvalidCommand);
@@ -111,16 +112,16 @@ const Screen = struct {
     }
 
     fn runRect(self: *Self, size: []const u8) !void {
-        var sizeSplit = mem.split(size, "x");
+        var sizeSplit = mem.split(u8, size, "x");
         const width = try fmt.parseUnsigned(usize, sizeSplit.next() orelse return error.InvalidCommand, 10);
         const height = try fmt.parseUnsigned(usize, sizeSplit.next() orelse return error.InvalidCommand, 10);
         self.rect(width, height);
     }
 
-    fn runRotate(self: *Self, iter: *mem.SplitIterator) !void {
+    fn runRotate(self: *Self, iter: *mem.SplitIterator(u8)) !void {
         const dir = iter.next() orelse return error.InvalidCommand;
         const coord_eql = iter.next() orelse return error.InvalidCommand;
-        var coord_split = mem.split(coord_eql, "=");
+        var coord_split = mem.split(u8, coord_eql, "=");
         _ = coord_split.next();
         const coord = try fmt.parseUnsigned(usize, coord_split.next() orelse return error.InvalidCommand, 10);
         _ = iter.next();
@@ -156,13 +157,13 @@ test "exampleTest" {
         \\rotate row y=0 by 4
         \\rotate column x=1 by 1
     ;
-    var lines = mem.split(util.trim(input), "\n");
+    var lines = mem.split(u8, util.trim(input), "\n");
     while (lines.next()) |line| {
         try screen.runCommand(line);
     }
-    std.testing.expectEqualSlices(bool, &[_]bool{ false, true, false, false, true, false, true }, screen.pixels[0]);
-    std.testing.expectEqualSlices(bool, &[_]bool{ true, false, true, false, false, false, false }, screen.pixels[1]);
-    std.testing.expectEqualSlices(bool, &[_]bool{ false, true, false, false, false, false, false }, screen.pixels[2]);
+    try std.testing.expectEqualSlices(bool, &[_]bool{ false, true, false, false, true, false, true }, screen.pixels[0]);
+    try std.testing.expectEqualSlices(bool, &[_]bool{ true, false, true, false, false, false, false }, screen.pixels[1]);
+    try std.testing.expectEqualSlices(bool, &[_]bool{ false, true, false, false, false, false, false }, screen.pixels[2]);
 
-    std.testing.expectEqual(@as(usize, 6), screen.litPixelCount());
+    try std.testing.expectEqual(@as(usize, 6), screen.litPixelCount());
 }

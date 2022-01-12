@@ -13,7 +13,7 @@ const log = std.log;
 pub fn main() anyerror!void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     defer _ = gpa.deinit();
-    const allocator = &gpa.allocator;
+    const allocator = gpa.allocator();
 
     const input = try util.readInput(allocator, 1024 * 1024);
     defer allocator.free(input);
@@ -44,18 +44,18 @@ const State = struct {
     const InstructionInfo = struct { type: InstructionType, num: u16 };
     const Instruction = struct { low_to: InstructionInfo, high_to: InstructionInfo };
 
-    allocator: *Allocator,
+    allocator: Allocator,
     arena: ArenaAllocator,
-    bots: AutoHashMap(u16, *Bot),
+    bots: AutoHashMap(u16, Bot),
     instructions: AutoHashMap(u16, *Instruction),
     outputs: AutoHashMap(u16, u16),
     goal_low: u16,
     goal_high: u16,
     part: u2,
 
-    fn init(allocator: *Allocator, goal_low: u16, goal_high: u16, part: u2) Self {
+    fn init(allocator: Allocator, goal_low: u16, goal_high: u16, part: u2) Self {
         return State{
-            .bots = AutoHashMap(u16, *Bot).init(allocator),
+            .bots = AutoHashMap(u16, Bot).init(allocator),
             .instructions = AutoHashMap(u16, *Instruction).init(allocator),
             .outputs = AutoHashMap(u16, u16).init(allocator),
             .goal_low = goal_low,
@@ -84,7 +84,7 @@ const State = struct {
                 const low_type: InstructionType = if (mem.eql(u8, words[5], "bot")) .bot else .output;
                 const high_num = try fmt.parseUnsigned(u16, words[11], 10);
                 const high_type: InstructionType = if (mem.eql(u8, words[10], "bot")) .bot else .output;
-                var instruction = try state.arena.allocator.create(Instruction);
+                var instruction = try state.arena.allocator().create(Instruction);
                 instruction.* = .{
                     .low_to = .{ .num = low_num, .type = low_type },
                     .high_to = .{ .num = high_num, .type = high_type },
@@ -113,10 +113,10 @@ const State = struct {
     fn registerBot(state: *State, bot_num: u16) !*Bot {
         const res = try state.bots.getOrPut(bot_num);
         if (!res.found_existing) {
-            res.entry.value = try state.arena.allocator.create(Bot);
-            res.entry.value.* = try Bot.init(&state.arena.allocator, bot_num);
+            // res.value_ptr = try state.arena_allocator.create(Bot);
+            res.value_ptr.* = try Bot.init(state.arena.allocator(), bot_num);
         }
-        return res.entry.value;
+        return res.value_ptr;
     }
 };
 
@@ -125,11 +125,11 @@ const Bot = struct {
 
     const CarryOutError = error{InstructionNotFound} || mem.Allocator.Error;
 
-    allocator: *Allocator,
+    allocator: Allocator,
     number: u16,
     microchips: ArrayList(u16),
 
-    fn init(allocator: *Allocator, bot_num: u16) !Self {
+    fn init(allocator: Allocator, bot_num: u16) !Self {
         const microchips = ArrayList(u16).init(allocator);
         errdefer microchips.deinit();
         return Self{
@@ -219,5 +219,5 @@ test "example test" {
     try state.populateInstructions(lines);
     const part1 = try state.getResult(lines);
 
-    expectEqual(@as(?u16, 2), part1);
+    try expectEqual(@as(?u16, 2), part1);
 }

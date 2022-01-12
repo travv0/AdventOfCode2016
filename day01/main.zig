@@ -36,11 +36,11 @@ const Direction = enum {
     test "turn" {
         var dir = Direction.West;
         dir.turn(TurnDir.R);
-        expectEqual(Direction.North, dir);
+        try expectEqual(Direction.North, dir);
         dir.turn(TurnDir.L);
-        expectEqual(Direction.West, dir);
+        try expectEqual(Direction.West, dir);
         dir.turn(TurnDir.L);
-        expectEqual(Direction.South, dir);
+        try expectEqual(Direction.South, dir);
     }
 };
 
@@ -58,7 +58,7 @@ const Coords = struct {
 pub fn main() anyerror!void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     defer _ = gpa.deinit();
-    const allocator = &gpa.allocator;
+    const allocator = gpa.allocator();
     const buf = try util.readInput(allocator, 1024);
     defer allocator.free(buf);
     const path = try makePath(allocator, buf);
@@ -71,15 +71,15 @@ pub fn main() anyerror!void {
     print("Part 2: {}\n", .{try manhattanDistance(.{ .x = 0, .y = 0 }, seen_twice_pos)});
 }
 
-fn parseInput(allocator: *Allocator, input: []const u8) ![]Turn {
-    var parts = mem.split(util.trim(input), ", ");
+fn parseInput(allocator: Allocator, input: []const u8) ![]Turn {
+    var parts = mem.split(u8, util.trim(input), ", ");
     var turns = ArrayList(Turn).init(allocator);
     errdefer turns.deinit();
 
     while (parts.next()) |part| {
         const dir: TurnDir = if (part[0] == 'R') .R else .L;
         const dist = fmt.parseUnsigned(u8, part[1..], 10) catch |err| {
-            util.exitWithError(err, "couldn't parse '{}' as number", .{part[1..]});
+            util.exitWithError(err, "couldn't parse '{s}' as number", .{part[1..]});
         };
         try turns.append(.{ .direction = dir, .distance = dist });
     }
@@ -91,15 +91,15 @@ test "parseInput" {
     const turns = try parseInput(std.testing.allocator, "R1, L2, R123");
     defer std.testing.allocator.free(turns);
 
-    expectEqual(TurnDir.R, turns[0].direction);
-    expectEqual(@as(u8, 1), turns[0].distance);
-    expectEqual(TurnDir.L, turns[1].direction);
-    expectEqual(@as(u8, 2), turns[1].distance);
-    expectEqual(TurnDir.R, turns[2].direction);
-    expectEqual(@as(u8, 123), turns[2].distance);
+    try expectEqual(TurnDir.R, turns[0].direction);
+    try expectEqual(@as(u8, 1), turns[0].distance);
+    try expectEqual(TurnDir.L, turns[1].direction);
+    try expectEqual(@as(u8, 2), turns[1].distance);
+    try expectEqual(TurnDir.R, turns[2].direction);
+    try expectEqual(@as(u8, 123), turns[2].distance);
 }
 
-fn makePath(allocator: *Allocator, input: []const u8) ![]Coords {
+fn makePath(allocator: Allocator, input: []const u8) ![]Coords {
     const turns = try parseInput(allocator, input);
     defer allocator.free(turns);
     var current_pos = Coords{ .x = 0, .y = 0 };
@@ -138,10 +138,10 @@ test "makePath" {
         .{ .x = 4, .y = -2 },
     };
 
-    expectEqual(expected_path.len, path.len);
+    try expectEqual(expected_path.len, path.len);
     for (path) |coords, i| {
-        expectEqual(expected_path[i].x, coords.x);
-        expectEqual(expected_path[i].y, coords.y);
+        try expectEqual(expected_path[i].x, coords.x);
+        try expectEqual(expected_path[i].y, coords.y);
     }
 }
 
@@ -150,11 +150,11 @@ fn manhattanDistance(p1: Coords, p2: Coords) !i16 {
 }
 
 test "manhattanDistance" {
-    expectEqual(@as(i16, 12), try manhattanDistance(.{ .x = 8, .y = 7 }, .{ .x = 1, .y = 2 }));
-    expectEqual(@as(i16, 13), try manhattanDistance(.{ .x = 9, .y = 9 }, .{ .x = 10, .y = 21 }));
+    try expectEqual(@as(i16, 12), try manhattanDistance(.{ .x = 8, .y = 7 }, .{ .x = 1, .y = 2 }));
+    try expectEqual(@as(i16, 13), try manhattanDistance(.{ .x = 9, .y = 9 }, .{ .x = 10, .y = 21 }));
 }
 
-fn findFirstPosVisitedTwice(allocator: *Allocator, path: []const Coords) !Coords {
+fn findFirstPosVisitedTwice(allocator: Allocator, path: []const Coords) !Coords {
     var seen_positions = ArrayList(Coords).init(allocator);
     defer seen_positions.deinit();
 
@@ -173,6 +173,6 @@ test "findFirstPosVisitedTwice" {
     const path = try makePath(std.testing.allocator, "R8, R4, R4, R8");
     defer std.testing.allocator.free(path);
     const pos = try findFirstPosVisitedTwice(std.testing.allocator, path);
-    expectEqual(@as(i16, 4), pos.x);
-    expectEqual(@as(i16, 0), pos.y);
+    try expectEqual(@as(i16, 4), pos.x);
+    try expectEqual(@as(i16, 0), pos.y);
 }

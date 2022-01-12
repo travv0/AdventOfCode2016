@@ -7,7 +7,7 @@ const expectEqualStrings = std.testing.expectEqualStrings;
 pub fn main() anyerror!void {
     var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
     defer arena.deinit();
-    const allocator = &arena.allocator;
+    const allocator = arena.allocator();
 
     var frequencies: [100][26]u8 = [_][26]u8{[_]u8{0} ** 26} ** 100;
     const input = try util.readInput(allocator, 10 * 1024);
@@ -20,7 +20,7 @@ pub fn main() anyerror!void {
 }
 
 fn fillFrequencies(input: []const u8, frequencies: [][26]u8) !u8 {
-    var lines = std.mem.split(input, "\n");
+    var lines = std.mem.split(u8, input, "\n");
     var line_len: u8 = 0;
     while (lines.next()) |line| {
         for (line) |char, i| {
@@ -53,11 +53,11 @@ const test_input =
 test "fillFrequencies" {
     var frequencies: [100][26]u8 = [_][26]u8{[_]u8{0} ** 26} ** 100;
     const line_len = try fillFrequencies(test_input, &frequencies);
-    expectEqual(@as(u8, 6), line_len);
-    expectEqual(@as(u8, 3), frequencies[0]['e' - 'a']);
-    expectEqual(@as(u8, 2), frequencies[0]['d' - 'a']);
-    expectEqual(@as(u8, 3), frequencies[2]['s' - 'a']);
-    expectEqual(@as(u8, 2), frequencies[4]['v' - 'a']);
+    try expectEqual(@as(u8, 6), line_len);
+    try expectEqual(@as(u8, 3), frequencies[0]['e' - 'a']);
+    try expectEqual(@as(u8, 2), frequencies[0]['d' - 'a']);
+    try expectEqual(@as(u8, 3), frequencies[2]['s' - 'a']);
+    try expectEqual(@as(u8, 2), frequencies[4]['v' - 'a']);
 }
 
 fn highestFrequency(frequencies: [][26]u8, col: usize) u8 {
@@ -77,12 +77,12 @@ fn highestFrequency(frequencies: [][26]u8, col: usize) u8 {
 test "highestFrequency" {
     var frequencies: [100][26]u8 = [_][26]u8{[_]u8{0} ** 26} ** 100;
     _ = try fillFrequencies(test_input, &frequencies);
-    expectEqual(@as(u8, 'e'), highestFrequency(&frequencies, 0));
-    expectEqual(@as(u8, 'a'), highestFrequency(&frequencies, 1));
-    expectEqual(@as(u8, 's'), highestFrequency(&frequencies, 2));
-    expectEqual(@as(u8, 't'), highestFrequency(&frequencies, 3));
-    expectEqual(@as(u8, 'e'), highestFrequency(&frequencies, 4));
-    expectEqual(@as(u8, 'r'), highestFrequency(&frequencies, 5));
+    try expectEqual(@as(u8, 'e'), highestFrequency(&frequencies, 0));
+    try expectEqual(@as(u8, 'a'), highestFrequency(&frequencies, 1));
+    try expectEqual(@as(u8, 's'), highestFrequency(&frequencies, 2));
+    try expectEqual(@as(u8, 't'), highestFrequency(&frequencies, 3));
+    try expectEqual(@as(u8, 'e'), highestFrequency(&frequencies, 4));
+    try expectEqual(@as(u8, 'r'), highestFrequency(&frequencies, 5));
 }
 
 fn lowestFrequency(frequencies: [][26]u8, col: usize) u8 {
@@ -102,16 +102,16 @@ fn lowestFrequency(frequencies: [][26]u8, col: usize) u8 {
 test "lowestFrequency" {
     var frequencies: [100][26]u8 = [_][26]u8{[_]u8{0} ** 26} ** 100;
     _ = try fillFrequencies(test_input, &frequencies);
-    expectEqual(@as(u8, 'a'), lowestFrequency(&frequencies, 0));
-    expectEqual(@as(u8, 'd'), lowestFrequency(&frequencies, 1));
-    expectEqual(@as(u8, 'v'), lowestFrequency(&frequencies, 2));
-    expectEqual(@as(u8, 'e'), lowestFrequency(&frequencies, 3));
-    expectEqual(@as(u8, 'n'), lowestFrequency(&frequencies, 4));
-    expectEqual(@as(u8, 't'), lowestFrequency(&frequencies, 5));
+    try expectEqual(@as(u8, 'a'), lowestFrequency(&frequencies, 0));
+    try expectEqual(@as(u8, 'd'), lowestFrequency(&frequencies, 1));
+    try expectEqual(@as(u8, 'v'), lowestFrequency(&frequencies, 2));
+    try expectEqual(@as(u8, 'e'), lowestFrequency(&frequencies, 3));
+    try expectEqual(@as(u8, 'n'), lowestFrequency(&frequencies, 4));
+    try expectEqual(@as(u8, 't'), lowestFrequency(&frequencies, 5));
 }
 
 fn uncorruptMessage(
-    allocator: *Allocator,
+    allocator: Allocator,
     frequencies: [][26]u8,
     message_len: u8,
     uncorruptFn: fn (frequencies: [][26]u8, col: usize) u8,
@@ -132,6 +132,6 @@ test "uncorruptMessage" {
     defer allocator.free(easterMessage);
     const adventMessage = try uncorruptMessage(allocator, &frequencies, line_len, lowestFrequency);
     defer allocator.free(adventMessage);
-    expectEqualStrings("easter", easterMessage);
-    expectEqualStrings("advent", adventMessage);
+    try expectEqualStrings("easter", easterMessage);
+    try expectEqualStrings("advent", adventMessage);
 }

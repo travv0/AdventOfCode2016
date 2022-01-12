@@ -45,7 +45,7 @@ fn crackPassword(
             const result = try fmt.bufPrint(&buf, "{s}{}", .{ input, i });
             Md5.hash(result, &output, .{});
         }
-        const hash = try fmt.bufPrint(&buf, "{x}", .{output});
+        const hash = try fmt.bufPrint(&buf, "{s}", .{fmt.fmtSliceHexLower(&output)});
         if (mem.eql(u8, hash[0..5], "00000")) {
             buildPasswordFn(password, hash, &password_index);
         }
@@ -56,12 +56,12 @@ test "crackPasswordPart1" {
     const input = "abc";
     var password: [8]u8 = undefined;
     try crackPassword(input, &password, buildPasswordPart1);
-    testing.expectEqualStrings("18f47a30", &password);
+    try testing.expectEqualStrings("18f47a30", &password);
 }
 
 test "crackPasswordPart2" {
     const input = "abc";
     var password: [8]u8 = undefined;
     try crackPassword(input, &password, buildPasswordPart2);
-    testing.expectEqualStrings("05ace8e3", &password);
+    try testing.expectEqualStrings("05ace8e3", &password);
 }

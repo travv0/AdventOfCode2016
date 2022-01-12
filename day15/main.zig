@@ -22,7 +22,7 @@ const Disc = struct {
     positions: usize,
 };
 
-fn parseLine(allocator: *Allocator, line: []const u8) !Disc {
+fn parseLine(allocator: Allocator, line: []const u8) !Disc {
     const parts = try util.split(allocator, line, " ");
     defer allocator.free(parts);
     return Disc{
@@ -31,7 +31,7 @@ fn parseLine(allocator: *Allocator, line: []const u8) !Disc {
     };
 }
 
-fn parseInput(allocator: *Allocator, input: []const u8) ![]Disc {
+fn parseInput(allocator: Allocator, input: []const u8) ![]Disc {
     const lines = try util.split(allocator, util.trim(input), "\n");
     defer allocator.free(lines);
     return try it.span(lines) //
@@ -40,7 +40,7 @@ fn parseInput(allocator: *Allocator, input: []const u8) ![]Disc {
         .call(it.collect, .{allocator});
 }
 
-fn getWinningTime(comptime part: usize, allocator: *Allocator, discs: []Disc) !usize {
+fn getWinningTime(comptime part: usize, allocator: Allocator, discs: []Disc) !usize {
     if (part != 1 and part != 2) @compileError("part must be 1 or 2");
 
     const ds = ds: {
@@ -78,5 +78,5 @@ test "getWinningTime" {
     ;
     const discs = try parseInput(testing.allocator, input);
     defer testing.allocator.free(discs);
-    testing.expectEqual(@as(usize, 5), try getWinningTime(1, testing.allocator, discs));
+    try testing.expectEqual(@as(usize, 5), try getWinningTime(1, testing.allocator, discs));
 }

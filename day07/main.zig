@@ -10,15 +10,16 @@ const Allocator = std.mem.Allocator;
 pub fn main() anyerror!void {
     var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
     defer arena.deinit();
-    const input = try util.readInput(&arena.allocator, 1000 * 1024);
+    const allocator = arena.allocator();
+    const input = try util.readInput(allocator, 1000 * 1024);
     var tls_count: u32 = 0;
     var ssl_count: u32 = 0;
-    var lines = std.mem.split(util.trim(input), "\n");
+    var lines = std.mem.split(u8, util.trim(input), "\n");
     while (lines.next()) |line| {
         if (supportsTls(line)) {
             tls_count += 1;
         }
-        if (try supportsSsl(&arena.allocator, line)) {
+        if (try supportsSsl(allocator, line)) {
             ssl_count += 1;
         }
     }
@@ -37,10 +38,10 @@ fn supportsTls(ip: []const u8) bool {
 }
 
 test "supportsTls" {
-    expect(supportsTls("abba[mnop]qrst"));
-    expect(!supportsTls("abcd[bddb]xyyx"));
-    expect(!supportsTls("aaaa[qwer]tyui"));
-    expect(supportsTls("ioxxoj[asdfgh]zxcvbn"));
+    try expect(supportsTls("abba[mnop]qrst"));
+    try expect(!supportsTls("abcd[bddb]xyyx"));
+    try expect(!supportsTls("aaaa[qwer]tyui"));
+    try expect(supportsTls("ioxxoj[asdfgh]zxcvbn"));
 }
 
 fn hasAbba(section: []const u8) bool {
@@ -57,13 +58,13 @@ fn hasAbba(section: []const u8) bool {
 }
 
 test "hasAbba" {
-    expect(hasAbba("abba"));
-    expect(!hasAbba("abcd"));
-    expect(!hasAbba("aaaa"));
-    expect(hasAbba("ioxxoj"));
+    try expect(hasAbba("abba"));
+    try expect(!hasAbba("abcd"));
+    try expect(!hasAbba("aaaa"));
+    try expect(hasAbba("ioxxoj"));
 }
 
-fn supportsSsl(allocator: *Allocator, ip: []const u8) !bool {
+fn supportsSsl(allocator: Allocator, ip: []const u8) !bool {
     const nets = try findAbasAndBabs(allocator, ip);
     const abas = nets.abas;
     defer allocator.free(abas);
@@ -82,10 +83,10 @@ fn supportsSsl(allocator: *Allocator, ip: []const u8) !bool {
 }
 
 test "supportsSsl" {
-    expect(try supportsSsl(testing.allocator, "aba[bab]xyz"));
-    expect(!try supportsSsl(testing.allocator, "xyx[xyx]xyx"));
-    expect(try supportsSsl(testing.allocator, "aaa[kek]eke"));
-    expect(try supportsSsl(testing.allocator, "zazbz[bzb]cdb"));
+    try expect(try supportsSsl(testing.allocator, "aba[bab]xyz"));
+    try expect(!try supportsSsl(testing.allocator, "xyx[xyx]xyx"));
+    try expect(try supportsSsl(testing.allocator, "aaa[kek]eke"));
+    try expect(try supportsSsl(testing.allocator, "zazbz[bzb]cdb"));
 }
 
 const Nets = struct {
@@ -95,9 +96,7 @@ const Nets = struct {
 
 const SectionType = enum { Supernet, Hypernet };
 
-const Section = struct {
-    content: []const u8, type: SectionType
-};
+const Section = struct { content: []const u8, type: SectionType };
 
 const IpIter = struct {
     const Self = @This();
@@ -133,7 +132,7 @@ const IpIter = struct {
     }
 };
 
-fn findAbasAndBabs(allocator: *Allocator, ip: []const u8) !Nets {
+fn findAbasAndBabs(allocator: Allocator, ip: []const u8) !Nets {
     var abas = ArrayList([]const u8).init(allocator);
     errdefer abas.deinit();
     var babs = ArrayList([]const u8).init(allocator);
@@ -164,10 +163,10 @@ test "findAbasAndBabs" {
     const nets = try findAbasAndBabs(testing.allocator, "aba[bab]xyz");
     defer testing.allocator.free(nets.abas);
     defer testing.allocator.free(nets.babs);
-    expectEqualStrings("aba", nets.abas[0]);
-    expectEqual(@as(usize, 1), nets.abas.len);
-    expectEqualStrings("bab", nets.babs[0]);
-    expectEqual(@as(usize, 1), nets.babs.len);
+    try expectEqualStrings("aba", nets.abas[0]);
+    try expectEqual(@as(usize, 1), nets.abas.len);
+    try expectEqualStrings("bab", nets.babs[0]);
+    try expectEqual(@as(usize, 1), nets.babs.len);
 }
 
 fn isAba(section: []const u8) bool {
@@ -176,10 +175,10 @@ fn isAba(section: []const u8) bool {
 }
 
 test "isAba" {
-    expect(isAba("aba"));
-    expect(!isAba("abc"));
-    expect(!isAba("aaa"));
-    expect(isAba("oxo"));
+    try expect(isAba("aba"));
+    try expect(!isAba("abc"));
+    try expect(!isAba("aaa"));
+    try expect(isAba("oxo"));
 }
 
 fn babify(aba: []const u8, bab: *[3]u8) void {
@@ -192,5 +191,5 @@ test "babify" {
     var aba = "aba";
     var bab: [3]u8 = undefined;
     babify(aba, &bab);
-    expectEqualStrings("bab", &bab);
+    try expectEqualStrings("bab", &bab);
 }

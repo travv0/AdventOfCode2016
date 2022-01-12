@@ -14,7 +14,7 @@ const Direction = enum { U, R, D, L };
 pub fn main() anyerror!void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     defer _ = gpa.deinit();
-    const allocator = &gpa.allocator;
+    const allocator = gpa.allocator();
     const input = try util.readInput(allocator, 1024 * 10);
     defer allocator.free(input);
 
@@ -27,7 +27,7 @@ pub fn main() anyerror!void {
     print("Part 2: {s}\n", .{code_part2});
 }
 
-fn findCode(allocator: *Allocator, input: []const u8, moveFn: fn (u8, Direction) u8) ![]u8 {
+fn findCode(allocator: Allocator, input: []const u8, moveFn: fn (u8, Direction) u8) ![]u8 {
     const all_dirs = try parseInput(allocator, input);
     defer allocator.free(all_dirs);
     defer for (all_dirs) |dir| allocator.free(dir);
@@ -43,13 +43,13 @@ fn findCode(allocator: *Allocator, input: []const u8, moveFn: fn (u8, Direction)
     return result;
 }
 
-fn parseInput(allocator: *Allocator, input: []const u8) ![][]Direction {
+fn parseInput(allocator: Allocator, input: []const u8) ![][]Direction {
     var result = ArrayList([]Direction).init(allocator);
     errdefer result.deinit();
     var lines = if (mem.indexOf(u8, input, "\r\n") != null)
-        mem.split(util.trim(input), "\r\n")
+        mem.split(u8, util.trim(input), "\r\n")
     else
-        mem.split(util.trim(input), "\n");
+        mem.split(u8, util.trim(input), "\n");
     while (lines.next()) |line| {
         var dirs = try allocator.alloc(Direction, line.len);
         errdefer allocator.free(dirs);
@@ -71,11 +71,11 @@ test "parseInput" {
     const dirs = try parseInput(std.testing.allocator, "ULL\nRRDDD\nLURDL\nUUUUD\n");
     defer std.testing.allocator.free(dirs);
     defer for (dirs) |dir| std.testing.allocator.free(dir);
-    expectEqual(@as(usize, 4), dirs.len);
-    expectEqualSlices(Direction, &[_]Direction{ .U, .L, .L }, dirs[0]);
-    expectEqualSlices(Direction, &[_]Direction{ .R, .R, .D, .D, .D }, dirs[1]);
-    expectEqualSlices(Direction, &[_]Direction{ .L, .U, .R, .D, .L }, dirs[2]);
-    expectEqualSlices(Direction, &[_]Direction{ .U, .U, .U, .U, .D }, dirs[3]);
+    try expectEqual(@as(usize, 4), dirs.len);
+    try expectEqualSlices(Direction, &[_]Direction{ .U, .L, .L }, dirs[0]);
+    try expectEqualSlices(Direction, &[_]Direction{ .R, .R, .D, .D, .D }, dirs[1]);
+    try expectEqualSlices(Direction, &[_]Direction{ .L, .U, .R, .D, .L }, dirs[2]);
+    try expectEqualSlices(Direction, &[_]Direction{ .U, .U, .U, .U, .D }, dirs[3]);
 }
 
 fn moveDirectionPart1(button: u8, dir: Direction) u8 {
@@ -86,7 +86,7 @@ fn moveDirectionPart1(button: u8, dir: Direction) u8 {
         .D => if (num < 7) num + 3 else num,
         .L => if ((num - 1) % 3 != 0) num - 1 else num,
     };
-    return std.fmt.digitToChar(new_num, false);
+    return std.fmt.digitToChar(new_num, .upper);
 }
 
 fn moveDirectionPart2(button: u8, dir: Direction) u8 {
@@ -139,21 +139,21 @@ fn moveDirectionPart2(button: u8, dir: Direction) u8 {
 }
 
 test "moveDirectionPart1" {
-    expectEqual(@as(u8, '1'), moveDirectionPart1('1', .L));
-    expectEqual(@as(u8, '3'), moveDirectionPart1('3', .U));
-    expectEqual(@as(u8, '3'), moveDirectionPart1('6', .U));
-    expectEqual(@as(u8, '9'), moveDirectionPart1('9', .R));
-    expectEqual(@as(u8, '7'), moveDirectionPart1('7', .L));
-    expectEqual(@as(u8, '5'), moveDirectionPart1('4', .R));
-    expectEqual(@as(u8, '7'), moveDirectionPart1('4', .D));
+    try expectEqual(@as(u8, '1'), moveDirectionPart1('1', .L));
+    try expectEqual(@as(u8, '3'), moveDirectionPart1('3', .U));
+    try expectEqual(@as(u8, '3'), moveDirectionPart1('6', .U));
+    try expectEqual(@as(u8, '9'), moveDirectionPart1('9', .R));
+    try expectEqual(@as(u8, '7'), moveDirectionPart1('7', .L));
+    try expectEqual(@as(u8, '5'), moveDirectionPart1('4', .R));
+    try expectEqual(@as(u8, '7'), moveDirectionPart1('4', .D));
 }
 
 test "findCode" {
     var code_part1 = try findCode(std.testing.allocator, "ULL\nRRDDD\nLURDL\nUUUUD\n", moveDirectionPart1);
     defer std.testing.allocator.free(code_part1);
-    expectEqualStrings("1985", code_part1);
+    try expectEqualStrings("1985", code_part1);
 
     var code_part2 = try findCode(std.testing.allocator, "ULL\nRRDDD\nLURDL\nUUUUD\n", moveDirectionPart2);
     defer std.testing.allocator.free(code_part2);
-    expectEqualStrings("5DB3", code_part2);
+    try expectEqualStrings("5DB3", code_part2);
 }

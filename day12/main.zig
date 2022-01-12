@@ -10,7 +10,7 @@ const expectEqual = std.testing.expectEqual;
 pub fn main() anyerror!void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     defer _ = gpa.deinit();
-    const allocator = &gpa.allocator;
+    const allocator = gpa.allocator();
     const input = try util.readInput(allocator, 1024 * 1024);
     defer allocator.free(input);
     const part1_result = try runProgram(allocator, input, false);
@@ -73,10 +73,10 @@ test "runProgram" {
     ;
 
     const result = try runProgram(allocator, input, false);
-    expectEqual(@as(isize, 42), result);
+    try expectEqual(@as(isize, 42), result);
 }
 
-fn runProgram(allocator: *Allocator, input: []const u8, ignite: bool) !isize {
+fn runProgram(allocator: Allocator, input: []const u8, ignite: bool) !isize {
     const commands = try parseCommands(allocator, input);
     defer allocator.free(commands);
 
@@ -95,10 +95,10 @@ fn runProgram(allocator: *Allocator, input: []const u8, ignite: bool) !isize {
     return registers.get('a') orelse error.RegisterEmpty;
 }
 
-fn parseCommands(allocator: *Allocator, input: []const u8) ![]Command {
+fn parseCommands(allocator: Allocator, input: []const u8) ![]Command {
     var commands = ArrayList(Command).init(allocator);
     errdefer commands.deinit();
-    var lines = mem.split(util.trim(input), "\n");
+    var lines = mem.split(u8, util.trim(input), "\n");
     while (lines.next()) |line| {
         const words = try util.split(allocator, line, " ");
         defer allocator.free(words);
@@ -106,10 +106,7 @@ fn parseCommands(allocator: *Allocator, input: []const u8) ![]Command {
         if (mem.eql(u8, words[0], "cpy")) {
             command = .{
                 .cpy = .{
-                    .from = if (fmt.parseInt(isize, words[1], 10)) |int|
-                        .{ .integer = int }
-                    else |_|
-                        .{ .register = words[1][0] },
+                    .from = if (fmt.parseInt(isize, words[1], 10)) |int| .{ .integer = int } else |_| .{ .register = words[1][0] },
                     .to = words[2][0],
                 },
             };
@@ -120,10 +117,7 @@ fn parseCommands(allocator: *Allocator, input: []const u8) ![]Command {
         } else if (mem.eql(u8, words[0], "jnz")) {
             command = .{
                 .jnz = .{
-                    .check = if (fmt.parseInt(isize, words[1], 10)) |int|
-                        .{ .integer = int }
-                    else |_|
-                        .{ .register = words[1][0] },
+                    .check = if (fmt.parseInt(isize, words[1], 10)) |int| .{ .integer = int } else |_| .{ .register = words[1][0] },
                     .jump = try fmt.parseInt(isize, words[2], 10),
                 },
             };
@@ -147,12 +141,12 @@ test "parseCommands" {
     ;
     const commands = try parseCommands(allocator, input);
     defer allocator.free(commands);
-    expectEqual(@as(isize, 41), commands[0].cpy.from.integer);
-    expectEqual(@as(u8, 'a'), commands[0].cpy.to);
-    expectEqual(@as(u8, 'a'), commands[1].inc);
-    expectEqual(@as(u8, 'a'), commands[2].inc);
-    expectEqual(@as(u8, 'a'), commands[3].dec);
-    expectEqual(@as(u8, 'a'), commands[4].jnz.check.register);
-    expectEqual(@as(isize, 2), commands[4].jnz.jump);
-    expectEqual(@as(u8, 'a'), commands[5].dec);
+    try expectEqual(@as(isize, 41), commands[0].cpy.from.integer);
+    try expectEqual(@as(u8, 'a'), commands[0].cpy.to);
+    try expectEqual(@as(u8, 'a'), commands[1].inc);
+    try expectEqual(@as(u8, 'a'), commands[2].inc);
+    try expectEqual(@as(u8, 'a'), commands[3].dec);
+    try expectEqual(@as(u8, 'a'), commands[4].jnz.check.register);
+    try expectEqual(@as(isize, 2), commands[4].jnz.jump);
+    try expectEqual(@as(u8, 'a'), commands[5].dec);
 }

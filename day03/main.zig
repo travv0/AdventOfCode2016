@@ -7,7 +7,7 @@ const Triangle = struct { x: u16, y: u16, z: u16 };
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     defer _ = gpa.deinit();
-    const allocator = &gpa.allocator;
+    const allocator = gpa.allocator();
     const input = try util.readInput(allocator, 1024 * 100);
     defer allocator.free(input);
 
@@ -19,7 +19,7 @@ pub fn main() !void {
 }
 
 fn partOne(input: []const u8) u16 {
-    var lines = std.mem.split(util.trim(input), "\n");
+    var lines = std.mem.split(u8, util.trim(input), "\n");
     var triangles: u16 = 0;
 
     while (lines.next()) |line| {
@@ -38,7 +38,7 @@ fn partOne(input: []const u8) u16 {
 }
 
 fn partTwo(input: []const u8) !u16 {
-    var lines = std.mem.split(util.trim(input), "\n");
+    var lines = std.mem.split(u8, util.trim(input), "\n");
     var triangles: u16 = 0;
     const sides = 3;
 
@@ -73,7 +73,7 @@ fn isTriangle(triangle: Triangle) bool {
     return false;
 }
 
-fn populateSides(sides: *[3][]const u8, lines: *SplitIterator) !void {
+fn populateSides(sides: *[3][]const u8, lines: *SplitIterator(u8)) !void {
     const line = lines.next() orelse return error.WrongNumberOfLines;
     sides[0] = util.trim(line[0..5]);
     sides[1] = util.trim(line[5..10]);
@@ -82,6 +82,6 @@ fn populateSides(sides: *[3][]const u8, lines: *SplitIterator) !void {
 
 fn parseSide(side: []const u8) u16 {
     return std.fmt.parseUnsigned(u16, side, 10) catch |err| {
-        util.exitWithError(err, "couldn't parse '{}'", .{side});
+        util.exitWithError(err, "couldn't parse '{s}'", .{side});
     };
 }

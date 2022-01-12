@@ -31,10 +31,10 @@ const Pos = struct {
 
 test "isWall" {
     const favorite_number = 10;
-    expect(!(Pos{ .x = 0, .y = 0 }).isWall(favorite_number));
-    expect((Pos{ .x = 1, .y = 0 }).isWall(favorite_number));
-    expect((Pos{ .x = 4, .y = 3 }).isWall(favorite_number));
-    expect(!(Pos{ .x = 5, .y = 3 }).isWall(favorite_number));
+    try expect(!(Pos{ .x = 0, .y = 0 }).isWall(favorite_number));
+    try expect((Pos{ .x = 1, .y = 0 }).isWall(favorite_number));
+    try expect((Pos{ .x = 4, .y = 3 }).isWall(favorite_number));
+    try expect(!(Pos{ .x = 5, .y = 3 }).isWall(favorite_number));
 }
 
 fn countSetBits(num: usize) usize {
@@ -47,7 +47,7 @@ fn countSetBits(num: usize) usize {
     return count;
 }
 
-fn pathNodeNeighbors(neighbors: c.ASNeighborList, node: ?*c_void, context: ?*c_void) callconv(.C) void {
+fn pathNodeNeighbors(neighbors: c.ASNeighborList, node: ?*anyopaque, context: ?*anyopaque) callconv(.C) void {
     const pos = @ptrCast(?*Pos, @alignCast(8, node)).?;
     const favorite_number = @ptrCast(?*usize, @alignCast(8, context)).?.*;
 
@@ -76,7 +76,7 @@ fn pathNodeNeighbors(neighbors: c.ASNeighborList, node: ?*c_void, context: ?*c_v
     }
 }
 
-fn pathNodeHeuristic(from_node: ?*c_void, to_node: ?*c_void, context: ?*c_void) callconv(.C) f32 {
+fn pathNodeHeuristic(from_node: ?*anyopaque, to_node: ?*anyopaque, context: ?*anyopaque) callconv(.C) f32 {
     const from = @ptrCast(?*Pos, @alignCast(@alignOf(Pos), from_node)).?;
     const to = @ptrCast(?*Pos, @alignCast(@alignOf(Pos), to_node)).?;
     return @intToFloat(
